@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    font-family: "Lato", system-ui, sans-serif;
+    color: #1c1c2e;
+    background: #f8faf9;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    font-weight: 700;
+    color: #1c1c2e;
+    letter-spacing: -0.01em;
+  }
+  ::selection {
+    background: #1A6B3C;
+    color: #fff;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 font-display font-bold text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  .btn-primary {
+    @apply btn bg-primary text-white hover:bg-primary-600 focus:ring-primary shadow-glow;
+  }
+  .btn-gold {
+    @apply btn bg-accent text-charcoal hover:bg-accent-500 focus:ring-accent shadow-gold;
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-charcoal hover:bg-mint focus:ring-primary;
+  }
+  .btn-outline {
+    @apply btn border border-bordergray bg-white text-charcoal hover:border-primary hover:text-primary focus:ring-primary;
+  }
+  .input {
+    @apply w-full rounded-xl border border-bordergray bg-white px-4 py-3 font-sans text-sm text-charcoal placeholder:text-textgray focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20;
+  }
+  .label {
+    @apply mb-1.5 block font-sans text-xs font-semibold uppercase tracking-wide text-textgray;
+  }
+  .card {
+    @apply rounded-2xl border border-bordergray bg-white p-6 shadow-soft;
+  }
+  .glass {
+    @apply rounded-2xl border border-white/40 bg-white/70 backdrop-blur-xl shadow-card;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold;
+  }
+  .money {
+    @apply font-mono font-semibold text-accent-500;
+  }
+  .divider {
+    @apply my-4 h-px w-full bg-bordergray;
+  }
+  .nav-link {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-textgray transition-colors hover:bg-mint hover:text-primary;
+  }
+  .nav-link-active {
+    @apply bg-mint text-primary;
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, #eef2f0 25%, #f8faf9 50%, #eef2f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+}
+
+/* Hide scrollbars but keep functional */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

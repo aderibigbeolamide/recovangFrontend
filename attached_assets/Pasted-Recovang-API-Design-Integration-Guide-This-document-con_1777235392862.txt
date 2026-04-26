@@ -1,0 +1,94 @@
+Recovang API & Design Integration Guide
+This document contains the full list of backend endpoints and the specialized prompts to guide an AI assistant in building a professional, high-standard frontend for the Recovang platform.
+
+1. Complete Endpoint List
+Module	Method	Endpoint	Description
+Auth	POST	/api/v1/auth/register	Unified Registration (Step 1)
+POST	/api/v1/auth/onboard/collector	Collector Onboarding (Step 2)
+POST	/api/v1/auth/onboard/business	Brand/Factory Onboarding (Step 2)
+POST	/api/v1/auth/onboard/agent	Agent Onboarding (Step 2)
+POST	/api/v1/auth/login	Login all user types
+POST	/api/v1/auth/logout	Secure Logout
+POST	/api/v1/auth/verify-email	Email OTP Verification
+POST	/api/v1/auth/forgot-password	Password Reset Request
+POST	/api/v1/auth/reset-password	Set New Password
+GET	/api/v1/auth/me	Current Authenticated User
+POST	/api/v1/auth/refresh	Token Refresh
+Collector	GET	/api/v1/collector/dashboard	Wallet, Stats, Nearby Hubs
+GET	/api/v1/collector/profile	View Profile
+PUT	/api/v1/collector/profile	Update Profile
+POST	/api/v1/collector/bank-account	Add/Update Bank Details
+POST	/api/v1/collector/bank-account/verify	Resolve Bank Account
+GET	/api/v1/collector/balance	Detailed Balance Summary
+GET	/api/v1/collector/earnings/summary	Weekly/Monthly Summaries
+GET	/api/v1/collector/earnings/history	Full Earnings Audit
+GET	/api/v1/collector/submissions	History of Waste Deposits
+POST	/api/v1/collector/submissions/:id/dispute	Raise Dispute on Verified Weight
+GET	/api/v1/collector/leaderboard	Regional & National Rankings
+GET	/api/v1/collector/badges	Achievements & XP
+GET	/api/v1/collector/referral	Referral Code & Invites
+GET	/api/v1/collector/streak	Collection Consistency Tracker
+POST	/api/v1/collector/utilities/purchase	Airtime, Data, Electricity, Bills
+Agent	GET	/api/v1/agent/dashboard	Hub Load & Pending Verifications
+GET	/api/v1/agent/hub	Hub Info & Capacity
+PUT	/api/v1/agent/hub/load	Update Real-time Hub Capacity
+GET	/api/v1/agent/submissions/pending	Verification Queue
+POST	/api/v1/agent/submissions/:id/verify	Final Verification (Weight + Photo)
+POST	/api/v1/agent/submissions/:id/reject	Reject Fraudulent Submission
+POST	/api/v1/agent/location	Update Agent GPS Location
+Logistics	POST	/api/v1/logistics/pickups/request	Request Hub-to-Factory Pickup
+GET	/api/v1/logistics/pickups/pending	Available Pickup Requests
+POST	/api/v1/logistics/pickups/:id/accept	Accept Pickup Task
+PUT	/api/v1/logistics/pickups/:id/status	In-Transit / Completed Updates
+POST	/api/v1/logistics/location	Live Fleet Tracking
+Brand	GET	/api/v1/brand/dashboard	Compliance Progress
+GET	/api/v1/brand/financials	Transaction History
+POST	/api/v1/brand/payments/initiate	Pay EPR Compliance Fees
+GET	/api/v1/brand/impact-report/:quarter	Download Sustainability Report
+Admin	GET	/api/v1/admin/dashboard	Platform KPIs
+GET	/api/v1/admin/analytics/overview	Growth & Volume Trends
+GET	/api/v1/admin/submissions/flagged	Fraud Review Queue
+POST	/api/v1/admin/payments/bulk-approve	Approve Collector Withdrawals
+POST	/api/v1/admin/pricing	Set Global Waste Category Prices
+2. AI Integration Prompt (Technical)
+Copy and paste this into your AI assistant to start building the frontend:
+
+"I need you to build a production-ready React frontend for Recovang, a sustainability platform.
+
+Architecture & Stack:
+
+Use React 18 + TypeScript + Vite.
+Styling: Tailwind CSS (Strictly follow the project's CSS variables).
+State Management: Zustand for global auth and UI state.
+Data Fetching: TanStack Query (React Query) for caching and offline fallback.
+Forms: React Hook Form + Zod for validation.
+Routing: React Router v6 with Protected Routes based on user roles (Collector, Agent, Brand, etc.).
+Core Tasks:
+
+Implement a Unified Registration flow (Step 1: Basic info -> Step 2: Role-specific onboarding).
+Create an Axios interceptor for JWT management, handling 401 errors by attempting to call /api/v1/auth/refresh.
+Implement Offline-First Submissions: Use Dexie.js (IndexedDB) to queue waste submissions when the user has no internet, and sync them automatically via the /api/v1/submissions/sync endpoint when back online.
+Build a Dynamic Dashboard that adapts based on user role, pulling data from the relevant /dashboard endpoints.
+Here is the endpoint list for reference: [Paste Section 1 Above]"
+
+3. Professional UI/UX & Design Prompt
+Copy and paste this to ensure the AI creates a world-class design:
+
+"I want you to act as a Senior Product Designer and Frontend Architect. Your task is to design a 'wow-worthy' interface for Recovang that rivals top fintech apps like Revolut and Apple Card.
+
+Design Aesthetic:
+
+Premium Color Palette: Deep Forest Green (#1A6B3C), Metallic Gold (#D4A017), and Rich Charcoal (#1C1C2E).
+Visual Style: Use Glassmorphism for cards, subtle Linear Gradients, and a spacious layout.
+Typography: Strictly use Plus Jakarta Sans for headings and Lato for body text. Use JetBrains Mono for all monetary values.
+Interaction Design:
+
+Micro-animations: Use Framer Motion for page transitions, button hovers, and skeleton loaders.
+Money-First UX: The user's balance and earning potential must be the most prominent visual element on the screen.
+3-Tap Rule: Any critical action (submitting waste, withdrawing cash, verifying a load) must be achievable in 3 taps or less.
+Standards & Quality:
+
+Mobile-First: The app will be used primarily on mobile devices (TECNO, Infinix, etc.) in Nigeria. Optimize for touch targets and performance.
+Zero Placeholders: Use your generate_image tool to create realistic user avatars, hub photos, and category icons.
+Trust Signals: Use clear success/error states, verification badges, and real-time update indicators (WebSockets where applicable).
+Create a design that feels like the future of waste management—clean, professional, and profitable."
