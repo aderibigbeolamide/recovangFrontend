@@ -19,6 +19,7 @@ import FindHub from "@/pages/public/FindHub";
 import Contact from "@/pages/public/Contact";
 import FAQ from "@/pages/public/FAQ";
 import Blog from "@/pages/public/Blog";
+import BlogPost from "@/pages/public/BlogPost";
 import Legal from "@/pages/public/Legal";
 
 import Login from "@/pages/auth/Login";
@@ -143,6 +144,7 @@ export default function App() {
               <Route path="contact" element={<Contact />} />
               <Route path="faq" element={<FAQ />} />
               <Route path="blog" element={<Blog />} />
+              <Route path="blog/:slug" element={<BlogPost />} />
               <Route path="terms" element={<Legal kind="terms" />} />
               <Route path="privacy" element={<Legal kind="privacy" />} />
             </Route>

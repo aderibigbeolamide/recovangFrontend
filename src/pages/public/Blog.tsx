@@ -64,7 +64,7 @@ export default function Blog() {
 function HeroCard({ post }: { post: BlogPost }) {
   return (
     <Link
-      to={`/blog#${post.slug}`}
+      to={`/blog/${post.slug}`}
       className="card group block overflow-hidden lg:grid lg:grid-cols-12"
     >
       <div className={`relative aspect-[16/10] overflow-hidden bg-gradient-to-br ${post.accent ?? "from-primary to-primary-700"} lg:col-span-7 lg:aspect-auto`}>
@@ -102,7 +102,7 @@ function HeroCard({ post }: { post: BlogPost }) {
 function PostCard({ post }: { post: BlogPost }) {
   return (
     <Link
-      to={`/blog#${post.slug}`}
+      to={`/blog/${post.slug}`}
       className="card group overflow-hidden transition hover:-translate-y-1 hover:shadow-card"
     >
       <div className={`relative aspect-[16/10] overflow-hidden bg-gradient-to-br ${post.accent ?? "from-primary to-primary-700"}`}>

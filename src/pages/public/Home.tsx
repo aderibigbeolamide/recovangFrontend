@@ -56,24 +56,49 @@ const PEOPLE = [
     alt: "A young African man sorting plastic bottles at a recycling hub",
     tag: "Hub agent · Surulere",
     caption: "Bola verifies 184 drops a day with a rugged scale and a Tecno phone.",
+    slug: "anatomy-of-a-hub",
   },
   {
     src: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=900&q=70",
     alt: "Coloured recycling bins for sorting waste",
     tag: "On the street",
     caption: "Sort PET, cans, paper and glass. The colour-coded bins do the rest.",
+    slug: "lagos-state-mou",
   },
   {
     src: "https://images.unsplash.com/photo-1582408921715-18e7806365c1?auto=format&fit=crop&w=900&q=70",
     alt: "Recycling worker pressing PET bottles into a bale",
     tag: "Processing partner · Apapa",
     caption: "Indorama bales 1.4 tonnes of PET an hour into food-grade flake.",
+    slug: "coca-cola-epr-partnership",
   },
   {
     src: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=900&q=70",
     alt: "Hands holding a cluster of crushed plastic bottles",
     tag: "Drops, drops, drops",
     caption: "Every bottle weighed and paid. No middlemen, no waiting.",
+    slug: "surulere-mother-school-fees",
+  },
+];
+
+const IN_ACTION = [
+  {
+    src: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=1400&q=75",
+    alt: "A collector picking plastic bottles off the street to recycle",
+    eyebrow: "A day with a collector",
+    title: "Folake walks five streets every morning. She earned ₦240,000 last term.",
+    body: "Her four kids' school fees came out of recovered PET bottles, paid into her wallet at ₦200/kg the moment our agent weighs the drop.",
+    cta: "Read Folake's story",
+    slug: "surulere-mother-school-fees",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=1400&q=75",
+    alt: "An agent weighing and photographing recovered plastic bottles",
+    eyebrow: "A day with an agent",
+    title: "Bola runs the Surulere hub. 184 drops verified before he closes at 7pm.",
+    body: "Weigh, photograph, sign, pay. Our agents earn ₦4 commission on every kilogram — and own the hub they run.",
+    cta: "See inside a hub",
+    slug: "anatomy-of-a-hub",
   },
 ];
 
@@ -82,15 +107,62 @@ export default function Home() {
     <>
       <Hero />
       <Partners />
-      <RealPeople />
       <ImpactStats />
+      <InAction />
       <HowItWorksSection />
       <CategoriesSection />
+      <RealPeople />
       <ForWhomGrid />
       <Testimonials />
       <BrandCTA />
       <FinalCTA />
     </>
+  );
+}
+
+function InAction() {
+  return (
+    <section className="bg-cream py-16 sm:py-20">
+      <div className="container-page">
+        <div className="mb-10 max-w-3xl sm:mb-12">
+          <Eyebrow>A day in the field</Eyebrow>
+          <h2 className="mt-3 text-h1 font-extrabold leading-tight text-balance">
+            One platform — built around the people who actually do the work.
+          </h2>
+          <p className="mt-4 text-textgray text-pretty">
+            From a single mother walking five streets in Surulere to the agent who weighs every bottle she drops, here's what circular economy looks like in practice.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {IN_ACTION.map((it) => (
+            <Link
+              key={it.slug}
+              to={`/blog/${it.slug}`}
+              className="group relative overflow-hidden rounded-3xl bg-charcoal text-white shadow-card transition hover:-translate-y-1 hover:shadow-glow"
+            >
+              <div className="aspect-[5/4] sm:aspect-[16/10]">
+                <img
+                  src={it.src}
+                  alt={it.alt}
+                  loading="lazy"
+                  className="h-full w-full object-cover opacity-90 transition duration-500 group-hover:scale-105 group-hover:opacity-100"
+                />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/55 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-6 sm:p-8">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-accent">{it.eyebrow}</div>
+                <h3 className="mt-2 text-xl font-extrabold leading-tight text-balance sm:text-2xl">{it.title}</h3>
+                <p className="mt-3 max-w-md text-sm text-white/80 sm:text-base">{it.body}</p>
+                <span className="mt-5 inline-flex items-center gap-1 text-xs font-extrabold uppercase tracking-wider text-accent">
+                  {it.cta} <ArrowRight size={14} />
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -105,13 +177,23 @@ function RealPeople() {
               Built by Africans, for Africans — every drop has a face and a story.
             </h2>
           </div>
-          <p className="text-textgray lg:col-span-5">
-            From a hub agent in Surulere to a baling line in Apapa, this is what the circular economy looks like when it actually works for the people doing the work.
-          </p>
+          <div className="lg:col-span-5">
+            <p className="text-textgray text-pretty">
+              From a hub agent in Surulere to a baling line in Apapa, this is what the circular economy looks like when it actually works for the people doing the work.
+            </p>
+            <Link to="/blog" className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-primary hover:text-primary-700">
+              Read all stories from the field <ArrowRight size={14} />
+            </Link>
+          </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PEOPLE.map((p) => (
-            <figure key={p.src} className="group relative overflow-hidden rounded-2xl bg-charcoal/5">
+            <Link
+              key={p.src}
+              to={`/blog/${p.slug}`}
+              aria-label={`Read the story: ${p.tag} — ${p.caption}`}
+              className="group relative block overflow-hidden rounded-2xl bg-charcoal/5 transition hover:-translate-y-1 hover:shadow-card focus:outline-none focus:ring-4 focus:ring-primary/20"
+            >
               <div className="aspect-[4/5] overflow-hidden">
                 <img
                   src={p.src}
@@ -120,11 +202,14 @@ function RealPeople() {
                   className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                 />
               </div>
-              <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-charcoal/90 via-charcoal/40 to-transparent p-4 text-white">
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-charcoal/90 via-charcoal/40 to-transparent p-4 text-white">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-accent">{p.tag}</div>
                 <div className="mt-1 text-sm font-bold leading-snug">{p.caption}</div>
-              </figcaption>
-            </figure>
+                <div className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-accent opacity-0 transition group-hover:opacity-100">
+                  Read story <ArrowRight size={11} />
+                </div>
+              </div>
+            </Link>
           ))}
         </div>
       </div>
@@ -277,7 +362,7 @@ function HowItWorksSection() {
         <div className="mb-14 grid gap-6 lg:grid-cols-12 lg:items-end">
           <div className="lg:col-span-7">
             <Eyebrow>How Recovang works</Eyebrow>
-            <h2 className="mt-3 text-h1 font-extrabold text-balance">From rubbish to receipt — in three taps.</h2>
+            <h2 className="mt-3 text-h1 font-extrabold text-balance">From waste to receipt — in three taps.</h2>
           </div>
           <p className="text-textgray lg:col-span-5">
             Built to work on a Tecno Spark with one bar of signal. The same flow whether you're dropping one bottle or a sack of cans.
