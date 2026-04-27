@@ -1,8 +1,10 @@
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { Menu, X, ArrowRight, Instagram, Twitter, Facebook, Linkedin, MapPin, Mail, Phone } from "lucide-react";
+import { Menu, X, ArrowRight, Instagram, Twitter, Facebook, Linkedin, MapPin, Mail, Phone, LayoutGrid } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { cn } from "@/lib/cn";
+import { useAuth } from "@/store/auth";
+import { Avatar } from "./ui";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -17,6 +19,9 @@ export default function PublicLayout() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
+  const { user, token } = useAuth();
+  const dashboardHref = user ? `/${user.role}/dashboard` : "/auth/login";
+  const isAuthed = Boolean(token && user);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -68,12 +73,32 @@ export default function PublicLayout() {
           </nav>
 
           <div className="hidden items-center gap-2 lg:flex">
-            <Link to="/auth/login" className="btn-ghost btn-sm">
-              Sign in
-            </Link>
-            <Link to="/auth/register" className="btn-primary btn-sm">
-              Start earning <ArrowRight size={14} />
-            </Link>
+            {isAuthed ? (
+              <>
+                <Link to={dashboardHref} className="btn-primary btn-sm">
+                  <LayoutGrid size={14} /> Open dashboard
+                </Link>
+                <Link
+                  to={dashboardHref}
+                  className="flex items-center gap-2 rounded-full border border-bordergray bg-white py-1 pl-1 pr-3 transition hover:border-charcoal/30"
+                  aria-label={`Continue as ${user?.name}`}
+                >
+                  <Avatar letters={user?.avatarLetters ?? "?"} tone="gold" size={28} />
+                  <span className="hidden text-xs font-extrabold leading-tight text-charcoal xl:inline">
+                    {user?.name?.split(" ")[0] ?? "Account"}
+                  </span>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/auth/login" className="btn-ghost btn-sm">
+                  Sign in
+                </Link>
+                <Link to="/auth/register" className="btn-primary btn-sm">
+                  Start earning <ArrowRight size={14} />
+                </Link>
+              </>
+            )}
           </div>
 
           <button
@@ -115,8 +140,16 @@ export default function PublicLayout() {
               ))}
             </nav>
             <div className="mt-8 flex flex-col gap-2">
-              <Link to="/auth/login" className="btn-outline">Sign in</Link>
-              <Link to="/auth/register" className="btn-primary">Start earning <ArrowRight size={14} /></Link>
+              {isAuthed ? (
+                <Link to={dashboardHref} className="btn-primary">
+                  <LayoutGrid size={14} /> Open my dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link to="/auth/login" className="btn-outline">Sign in</Link>
+                  <Link to="/auth/register" className="btn-primary">Start earning <ArrowRight size={14} /></Link>
+                </>
+              )}
             </div>
           </div>
         </div>

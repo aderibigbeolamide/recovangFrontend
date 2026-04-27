@@ -23,6 +23,8 @@ import Legal from "@/pages/public/Legal";
 
 import Login from "@/pages/auth/Login";
 import Register from "@/pages/auth/Register";
+import ForgotPassword from "@/pages/auth/ForgotPassword";
+import ResetPassword from "@/pages/auth/ResetPassword";
 
 import SettingsPage from "@/pages/_shared/Settings";
 
@@ -148,8 +150,11 @@ export default function App() {
             {/* AUTH */}
             <Route path="auth/login" element={<Login />} />
             <Route path="auth/register" element={<Register />} />
+            <Route path="auth/forgot-password" element={<ForgotPassword />} />
+            <Route path="auth/reset-password" element={<ResetPassword />} />
             <Route path="login" element={<Navigate to="/auth/login" replace />} />
             <Route path="register" element={<Navigate to="/auth/register" replace />} />
+            <Route path="forgot-password" element={<Navigate to="/auth/forgot-password" replace />} />
 
             {/* COLLECTOR */}
             <Route

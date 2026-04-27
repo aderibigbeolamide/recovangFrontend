@@ -1,17 +1,25 @@
 # Recovang — Frontend
 
-> Recover. Earn. Sustain. — a sustainability platform that turns waste into instant naira across Nigeria.
+> Recover. Earn. Sustain. — a sustainability platform that turns waste into instant cash across Africa, starting in Nigeria.
 
 ## Overview
 
-This is the frontend (UI) of the Recovang platform, built as a single React + TypeScript + Vite SPA. It implements the full sitemap from the product brief:
+This is the frontend (UI) of the Recovang platform, built as a single React + TypeScript + Vite SPA.
 
-- **Public site** — Home, About, How it works, Waste categories, Find a hub, Contact, FAQ, Blog, Terms, Privacy
-- **Auth** — Unified registration (2-step: account → role-specific onboarding) + login
-- **Collector portal** — Dashboard, Submit, History, Withdraw, Leaderboard, Badges, Referrals, Streaks, Disputes, Notifications
-- **Agent portal** — Dashboard, Verify, Hub, Reports, XP & earnings, Location
-- **Logistics portal** — Dashboard, Pickups, Fleet, Profile
-- **Admin portal** — Dashboard, Management, Logistics, Fraud, Audit logs
+- **Public site** — Home (with real human imagery), About, How it works, Waste categories, Find a hub, Contact, FAQ, Blog (wired to `/api/v1/blog` with mock fallback), Terms, Privacy
+- **Auth** — Single sign-in form (role detected from token), unified 3-step registration (account → role → verify), Forgot password, Reset password (6-digit OTP)
+- **Collector portal** — Dashboard, Submit, History, Withdraw, Leaderboard, Badges, Referrals, Streaks, Disputes, Notifications, Settings
+- **Agent portal** — Dashboard, Verify, Hub, Reports, XP & earnings, Location, Settings
+- **Logistics portal** — Dashboard, Pickups, Fleet, Profile, Settings
+- **Admin portal** — Dashboard, Management, Logistics, Fraud, Audit logs, Settings
+- **Brand portal** — Dashboard, Compliance, Payments, Impact reports, Brand profile, Settings
+- **Factory portal** — Dashboard, Marketplace, Orders, Shipments, Receipts, Plant profile, Settings
+
+When a user is signed in, every public page exposes an "Open dashboard" button + avatar in the header that takes them straight back to `/{role}/dashboard`.
+
+### API integration
+
+All API calls live in `src/services/*.service.ts`. They default to mock data when `VITE_USE_MOCK !== "false"` so the UI works end-to-end without a backend. Setting `VITE_USE_MOCK=false` and `VITE_API_URL` switches to the real Recovang REST API documented in `attached_assets/Pasted-Recovang-API-*.txt`.
 
 UI follows the brand system from the project bible: Primary Green `#1A6B3C`, Accent Gold `#D4A017`, Dark Charcoal `#1C1C2E`, Plus Jakarta Sans / Lato / JetBrains Mono.
 

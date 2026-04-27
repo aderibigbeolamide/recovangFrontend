@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { ArrowRight, Building2, Check, ChevronRight, Factory, Mail, Phone, Truck, User, Wallet } from "lucide-react";
+import { useState, type FormEvent } from "react";
+import { ArrowRight, Building2, Check, ChevronRight, Eye, EyeOff, Factory, Loader2, Lock, Mail, Phone, Truck, User, Wallet } from "lucide-react";
 import { AuthShell } from "./Login";
-import { DEMO_USERS, useAuth, type UserRole } from "@/store/auth";
+import { useAuth, type UserRole } from "@/store/auth";
+import { register as registerApi } from "@/services/auth.service";
 
 const ROLES: { v: UserRole; t: string; d: string; icon: any }[] = [
   { v: "collector", t: "I collect waste", d: "Drop bottles, cans, paper. Earn cash.", icon: Wallet },
@@ -17,12 +18,40 @@ export default function Register() {
   const { setSession } = useAuth();
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<UserRole>("collector");
+  const [firstName, setFirstName] = useState("Adaeze");
+  const [lastName, setLastName] = useState("Nwosu");
+  const [email, setEmail] = useState("adaeze@example.com");
+  const [phone, setPhone] = useState("+234 803 555 0182");
+  const [password, setPassword] = useState("demo-pass");
+  const [showPw, setShowPw] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const steps = ["Account", "Role", "Verify"];
 
-  function complete() {
-    const user = DEMO_USERS[role];
-    setSession(user, "demo.token." + role);
-    nav(`/${role}/dashboard`);
+  function step1Submit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!firstName.trim() || !email.trim() || password.length < 6) {
+      setError("Please fill in your name, email and a password of at least 6 characters.");
+      return;
+    }
+    setStep(2);
+  }
+
+  async function complete() {
+    setError(null);
+    setLoading(true);
+    try {
+      const { user, token } = await registerApi({
+        firstName, lastName, email: email.trim(), phone: phone.trim(), password, role,
+      });
+      setSession(user, token);
+      nav(`/${user.role}/dashboard`, { replace: true });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || "Could not create your account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -48,38 +77,61 @@ export default function Register() {
         <>
           <h1 className="text-h1 font-extrabold leading-tight text-balance">Create your account</h1>
           <p className="mt-2 text-textgray">Takes about 60 seconds. No NIN required to start.</p>
-          <div className="mt-6 space-y-4">
+          <form onSubmit={step1Submit} className="mt-6 space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="label">First name</label>
-                <input className="input" defaultValue="Adaeze" />
+                <label className="label" htmlFor="fn">First name</label>
+                <input id="fn" className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
               </div>
               <div>
-                <label className="label">Last name</label>
-                <input className="input" defaultValue="Nwosu" />
+                <label className="label" htmlFor="ln">Last name</label>
+                <input id="ln" className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
               </div>
             </div>
             <div>
-              <label className="label">Email</label>
+              <label className="label" htmlFor="em">Email</label>
               <div className="relative">
                 <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
-                <input className="input pl-10" defaultValue="adaeze@example.com" />
+                <input id="em" type="email" className="input pl-10" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
               </div>
             </div>
             <div>
-              <label className="label">Phone</label>
+              <label className="label" htmlFor="ph">Phone</label>
               <div className="relative">
                 <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
-                <input className="input pl-10" defaultValue="+234 803 555 0182" />
+                <input id="ph" type="tel" className="input pl-10" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
               </div>
             </div>
             <div>
-              <label className="label">Password</label>
-              <input className="input" type="password" defaultValue="demo-pass" />
-              <div className="help">8+ characters. Mix in a number for bonus security.</div>
+              <label className="label" htmlFor="pw">Password</label>
+              <div className="relative">
+                <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
+                <input
+                  id="pw"
+                  className="input pl-10 pr-10"
+                  type={showPw ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  minLength={6}
+                  required
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw((s) => !s)}
+                  aria-label={showPw ? "Hide password" : "Show password"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-textgray hover:text-charcoal"
+                >
+                  {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div className="help">6+ characters. Mix in a number for bonus security.</div>
             </div>
-            <button onClick={() => setStep(2)} className="btn-primary btn-lg w-full">Continue <ChevronRight size={16} /></button>
-          </div>
+            {error && (
+              <div className="rounded-xl border border-error/20 bg-error-50 px-3 py-2 text-sm text-error">{error}</div>
+            )}
+            <button type="submit" className="btn-primary btn-lg w-full">Continue <ChevronRight size={16} /></button>
+          </form>
         </>
       )}
 
@@ -133,7 +185,20 @@ export default function Register() {
             </div>
             <div className="help mt-3 text-center">Didn't get it? <button className="font-bold text-primary">Resend in 27s</button></div>
           </div>
-          <button onClick={complete} className="btn-primary btn-lg mt-7 w-full">Open my {role} dashboard <ArrowRight size={16} /></button>
+          {error && (
+            <div className="mt-4 rounded-xl border border-error/20 bg-error-50 px-3 py-2 text-sm text-error">{error}</div>
+          )}
+          <button
+            onClick={complete}
+            disabled={loading}
+            className="btn-primary btn-lg mt-7 w-full disabled:opacity-70"
+          >
+            {loading ? (
+              <><Loader2 size={16} className="animate-spin" /> Creating account…</>
+            ) : (
+              <>Open my {role} dashboard <ArrowRight size={16} /></>
+            )}
+          </button>
           <p className="mt-4 text-center text-xs text-textgray">By continuing, you agree to our <Link to="/terms" className="font-bold text-primary">Terms</Link> and <Link to="/privacy" className="font-bold text-primary">Privacy Policy</Link>.</p>
         </>
       )}

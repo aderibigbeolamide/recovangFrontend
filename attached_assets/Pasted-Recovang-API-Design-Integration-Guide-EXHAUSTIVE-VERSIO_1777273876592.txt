@@ -1,0 +1,118 @@
+Recovang API & Design Integration Guide (EXHAUSTIVE VERSION)
+This document contains the COMPLETE list of all 80+ backend endpoints and the specialized prompts to guide an AI assistant in building the Recovang frontend.
+
+1. Complete Endpoint List
+🔑 Authentication (/api/v1/auth)
+Method	Endpoint	Description
+POST	/register	Unified Registration (Step 1)
+POST	/onboard/collector	Collector Onboarding (Step 2)
+POST	/onboard/business	Brand/Factory Onboarding (Step 2)
+POST	/onboard/agent	Agent Onboarding (Step 2)
+POST	/login	Login all user types
+POST	/logout	Secure Logout
+POST	/verify-email	Email OTP Verification
+POST	/forgot-password	Password Reset Request
+POST	/reset-password	Set New Password
+GET	/me	Current Authenticated User
+POST	/refresh	Token Refresh
+👤 Collector (/api/v1/collector)
+Method	Endpoint	Description
+GET	/dashboard	Wallet, Stats, Recent activity
+GET	/profile	View Profile
+PUT	/profile	Update Profile
+POST	/bank-account	Add/Update Bank Details
+POST	/bank-account/verify	Resolve Bank Account
+GET	/balance	Detailed Balance Summary
+GET	/earnings/summary	Weekly/Monthly Summaries
+GET	/earnings/history	Full Earnings Audit
+GET	/submissions	History of Waste Deposits
+POST	/submissions/:id/dispute	Raise Dispute on Verified Weight
+GET	/hubs/nearby	Find closest hubs by GPS
+GET	/leaderboard	Regional & National Rankings
+GET	/badges	Achievements & XP
+GET	/notifications	List all notifications
+PUT	/notifications/:id/read	Mark as read
+PUT	/notifications/read-all	Mark all as read
+GET	/referral	Referral Code & Invites
+GET	/streak	Collection Consistency Tracker
+POST	/utilities/purchase	Airtime, Data, Electricity, Bills
+🚛 Logistics & Fleet (/api/v1/logistics)
+Method	Endpoint	Description
+POST	/pickups/request	Hub initiates request
+GET	/pickups/pending	Available Load Queue
+POST	/pickups/:id/accept	Accept Pickup Task
+PUT	/pickups/:id/status	Update (Transit, Delivered)
+PUT	/location	Live GPS Tracking of Fleet
+🏢 Factory (/api/v1/factory)
+Method	Endpoint	Description
+GET	/dashboard	Supply & Order Overview
+GET	/supply	List all available waste stock
+GET	/supply/:categorySlug	Detailed stock by type
+POST	/orders	Place Purchase Order
+GET	/orders	Order History
+GET	/orders/:id	Order Details
+PUT	/orders/:id/cancel	Cancel Pending Order
+POST	/confirm-receipt	Verify Received Weight
+🏷️ Brands (/api/v1/brand)
+Method	Endpoint	Description
+GET	/dashboard	EPR Compliance Meter
+GET	/compliance/current	Quarterly target status
+GET	/recovery/by-category	Recovery data by waste type
+POST	/payments/initiate	Pay Compliance Fees
+GET	/financials	Transaction Audit
+GET	/impact-report/:quarter	Download PDF Certificate
+🎧 Agent (/api/v1/agent)
+Method	Endpoint	Description
+GET	/dashboard	Today's stats & Verifications
+GET	/hub	Assigned Hub Details
+PUT	/hub/load	Update Real-time Hub Capacity
+GET	/submissions/pending	Verification Queue
+POST	/submissions/:id/verify	Final Verification (Weight+Photo)
+POST	/submissions/:id/reject	Reject Fraudulent Load
+PUT	/location	Update Agent/Hub Location
+💵 Withdrawals (/api/v1/withdrawals)
+Method	Endpoint	Description
+GET	/	History of withdrawals
+POST	/bank	Transfer cash to bank
+POST	/airtime	Purchase Airtime
+POST	/bills/:billType	Pay Electricity, TV, etc.
+GET	/options/networks	List available telecom networks
+📦 Submissions & Pricing (Public/Shared)
+Method	Endpoint	Description
+Submissions		
+POST	/api/v1/submissions/	Create New Deposit
+GET	/api/v1/submissions/:id	View Deposit Details
+POST	/api/v1/submissions/:id/photos	Upload Scale/Weight Photos
+POST	/api/v1/submissions/sync	Sync Offline Submissions
+Pricing		
+GET	/api/v1/pricing/	List All Active Prices
+GET	/api/v1/pricing/calculate	Real-time Payout Calculator
+Hubs		
+GET	/api/v1/hubs/	List all hubs
+GET	/api/v1/hubs/nearby	Find closest hubs
+GET	/api/v1/hubs/:id	Hub details
+Waste		
+GET	/api/v1/waste-categories/	All categories (PET, etc.)
+GET	/api/v1/waste-categories/:slug	Specific category details
+Blog		
+GET	/api/v1/blog	List all published posts
+GET	/api/v1/blog/:slug	Get post details by slug
+POST	/api/v1/blog	Create new post (Admin)
+PUT	/api/v1/blog/:id	Update post (Admin)
+DELETE	/api/v1/blog/:id	Delete post (Admin)
+🛡️ Admin (/api/v1/admin)
+Method	Endpoint	Description
+GET	/dashboard	System-wide KPIs
+GET	/analytics/overview	Growth trends
+GET	/analytics/ecosystem	Hub & Network performance
+GET	/collectors	Manage all collectors
+PUT	/collectors/:id/suspend	Suspend user account
+POST	/agents	Create Agent account
+POST	/hubs	Create/Manage Hubs
+GET	/submissions/flagged	Fraud detection review
+POST	/payments/bulk-approve	Process batch withdrawals
+POST	/pricing	Update global prices
+POST	/logistics/onboard	Register Logistics Partner
+POST	/hubs/satellite	Register Satellite Hub
+GET	/admins	List platform admins
+PUT	/admins/:id/permissions	Update RBAC roles

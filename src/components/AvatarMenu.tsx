@@ -20,8 +20,11 @@ export function AvatarMenu({ portalBase, compact = false }: { portalBase: string
   }, [open]);
 
   function doSignOut() {
-    signOut();
-    nav("/");
+    setOpen(false);
+    // Navigate FIRST so we don't briefly hit the /auth/login redirect
+    // when Protected re-renders without a token.
+    nav("/", { replace: true });
+    setTimeout(() => signOut(), 0);
   }
 
   return (

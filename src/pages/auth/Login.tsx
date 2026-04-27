@@ -1,105 +1,180 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useState, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState, type ReactNode, type FormEvent } from "react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Blob } from "@/components/illustrations";
-import { DEMO_USERS, useAuth, type UserRole } from "@/store/auth";
-
-const ROLES: { v: UserRole; t: string; d: string }[] = [
-  { v: "collector", t: "Collector", d: "Drop waste, get paid" },
-  { v: "agent", t: "Agent", d: "Verify drops at a hub" },
-  { v: "logistics", t: "Logistics", d: "Move material with your fleet" },
-  { v: "brand", t: "Brand", d: "Track EPR compliance" },
-  { v: "factory", t: "Factory", d: "Buy processed raw material" },
-  { v: "admin", t: "Admin", d: "Operate the platform" },
-];
+import { useAuth, DEMO_USERS } from "@/store/auth";
+import { login } from "@/services/auth.service";
 
 export default function Login() {
   const nav = useNavigate();
-  const { setSession } = useAuth();
-  const [role, setRole] = useState<UserRole>("collector");
+  const loc = useLocation();
+  const { setSession, user, token } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  function signIn() {
-    const user = DEMO_USERS[role];
-    setSession(user, "demo.token." + role);
-    nav(`/${role}/dashboard`);
+  // If already logged in, jump to their portal
+  useEffect(() => {
+    if (token && user) nav(`/${user.role}/dashboard`, { replace: true });
+  }, [token, user, nav]);
+
+  // If we got bounced here from a protected route, prefill state for nicer DX
+  const fromState = (loc.state as { from?: string } | null)?.from;
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const { user, token } = await login({ email: email.trim(), password });
+      setSession(user, token);
+      nav(fromState || `/${user.role}/dashboard`, { replace: true });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err?.message || "Could not sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <AuthShell>
       <h1 className="text-h1 font-extrabold leading-tight text-balance">Welcome back.</h1>
-      <p className="mt-2 text-textgray">Sign in to continue earning, verifying, or operating.</p>
+      <p className="mt-2 text-textgray">
+        Sign in and we'll take you straight to your dashboard.
+      </p>
 
-      <div className="mt-6">
-        <div className="label">Sign in as</div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {ROLES.map((r) => (
-            <button
-              key={r.v}
-              type="button"
-              onClick={() => setRole(r.v)}
-              className={`rounded-2xl border p-3 text-left transition ${
-                role === r.v
-                  ? "border-primary bg-mint ring-4 ring-primary/10"
-                  : "border-bordergray hover:border-primary/50"
-              }`}
-            >
-              <div className="text-sm font-extrabold text-charcoal">{r.t}</div>
-              <div className="text-[11px] text-textgray">{r.d}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-6 space-y-4">
+      <form onSubmit={onSubmit} className="mt-7 space-y-4">
         <div>
-          <label className="label">Email or phone</label>
+          <label className="label" htmlFor="email">Email or phone</label>
           <div className="relative">
             <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
-            <input className="input pl-10" defaultValue={DEMO_USERS[role!].email} />
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input pl-10"
+              placeholder="you@example.com"
+            />
           </div>
         </div>
+
         <div>
           <div className="flex items-center justify-between">
-            <label className="label !mb-1.5">Password</label>
-            <Link to="#" className="text-xs font-bold text-primary hover:text-primary-700">Forgot?</Link>
+            <label className="label !mb-1.5" htmlFor="pw">Password</label>
+            <Link
+              to="/auth/forgot-password"
+              className="text-xs font-bold text-primary hover:text-primary-700"
+            >
+              Forgot password?
+            </Link>
           </div>
           <div className="relative">
             <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
             <input
+              id="pw"
               type={show ? "text" : "password"}
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="input pl-10 pr-10"
-              defaultValue="demo-pass"
+              placeholder="Enter your password"
             />
-            <button type="button" onClick={() => setShow((s) => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-textgray">
-              {show ? <EyeOff size={15} /> : <Eye size={15} />}
+            <button
+              type="button"
+              onClick={() => setShow((s) => !s)}
+              aria-label={show ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-textgray hover:text-charcoal"
+            >
+              {show ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
-          <div className="help">Demo accounts use <span className="font-mono">demo-pass</span></div>
         </div>
 
-        <button onClick={signIn} className="btn-primary btn-lg w-full">
-          Sign in to {role} portal <ArrowRight size={16} />
+        {error && (
+          <div className="rounded-xl border border-error/20 bg-error-50 px-3 py-2 text-sm text-error">
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-primary btn-lg w-full disabled:opacity-70"
+        >
+          {loading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" /> Signing in…
+            </>
+          ) : (
+            <>
+              Sign in <ArrowRight size={16} />
+            </>
+          )}
         </button>
 
-        <div className="relative my-4">
+        <div className="relative my-2">
           <div className="divider" />
           <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-[10px] font-bold uppercase tracking-widest text-textgray">
             Or
           </span>
         </div>
 
-        <button className="btn-outline w-full">
+        <button type="button" className="btn-outline w-full">
           <span className="grid h-5 w-5 place-items-center rounded-full bg-charcoal text-[10px] font-bold text-accent">G</span>
           Continue with Google
         </button>
-      </div>
+      </form>
+
+      <DemoHint onPick={(em) => { setEmail(em); setPassword("demo-pass"); }} />
 
       <p className="mt-6 text-center text-sm text-textgray">
-        New to Recovang? <Link to="/auth/register" className="font-bold text-primary hover:text-primary-700">Create an account</Link>
+        New to Recovang?{" "}
+        <Link to="/auth/register" className="font-bold text-primary hover:text-primary-700">
+          Create an account
+        </Link>
       </p>
     </AuthShell>
+  );
+}
+
+function DemoHint({ onPick }: { onPick: (email: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="mt-5 rounded-xl border border-bordergray bg-cream/60 p-3 text-xs">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between font-bold text-charcoal/80"
+      >
+        <span>Use a demo account</span>
+        <span className="text-textgray">{open ? "Hide" : "Show"}</span>
+      </button>
+      {open && (
+        <div className="mt-3 grid gap-1.5">
+          {Object.values(DEMO_USERS).map((u) => (
+            <button
+              key={u.id}
+              type="button"
+              onClick={() => onPick(u.email)}
+              className="flex items-center justify-between rounded-lg bg-white px-2.5 py-1.5 text-left hover:bg-mint"
+            >
+              <span className="font-mono text-[11px] text-charcoal">{u.email}</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">{u.role}</span>
+            </button>
+          ))}
+          <p className="mt-1 text-textgray">
+            Password for all demo accounts: <span className="font-mono">demo-pass</span>
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -109,14 +184,14 @@ export function AuthShell({ children }: { children: ReactNode }) {
       <div className="grid min-h-screen lg:grid-cols-2">
         {/* Left side — form */}
         <div className="flex flex-col bg-cream">
-          <div className="container-page flex h-20 items-center justify-between">
+          <div className="container-page flex h-16 items-center justify-between sm:h-20">
             <Link to="/"><Logo /></Link>
-            <Link to="/" className="text-sm font-bold text-textgray hover:text-charcoal flex items-center gap-1">
+            <Link to="/" className="flex items-center gap-1 text-sm font-bold text-textgray hover:text-charcoal">
               <ArrowLeft size={14} /> Back to site
             </Link>
           </div>
-          <div className="flex flex-1 items-center justify-center px-6 py-10">
-            <div className="card w-full max-w-md p-8 sm:p-10">{children}</div>
+          <div className="flex flex-1 items-start justify-center px-4 py-6 sm:items-center sm:px-6 sm:py-10">
+            <div className="card w-full max-w-md p-6 sm:p-8 md:p-10">{children}</div>
           </div>
           <p className="px-6 pb-6 text-center text-xs text-textgray">
             © 2026 Recovang Technologies Ltd. RC 1948-2204.
@@ -135,7 +210,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
           <Blob className="left-[-10%] top-[-10%] h-[400px] w-[400px]" color="from-accent/30 to-accent/0" />
           <Blob className="right-[-15%] bottom-[-15%] h-[400px] w-[400px]" color="from-primary/40 to-primary/0" />
 
-          <div className="relative flex h-full flex-col justify-between p-12">
+          <div className="relative flex h-full flex-col justify-between p-10 xl:p-12">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent">
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Live across Africa · starting in Nigeria

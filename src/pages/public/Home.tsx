@@ -33,9 +33,48 @@ const CATEGORIES = [
 ];
 
 const TESTIMONIALS = [
-  { name: "Adaeze N.", city: "Surulere · Lagos", q: "I made ₦48,000 last month from things I used to throw away. Recovang changed my hustle.", payout: 48000 },
-  { name: "Ibrahim K.", city: "Wuse · Abuja", q: "The agent at my hub is sharp. Drop, weigh, pay — under three minutes every time.", payout: 31200 },
-  { name: "Folake A.", city: "Yaba · Lagos", q: "I cash out to airtime instantly. My kids' data stays on. My block stays clean.", payout: 22400 },
+  {
+    name: "Adaeze N.", city: "Surulere · Lagos", payout: 48000,
+    q: "I made ₦48,000 last month from things I used to throw away. Recovang changed my hustle.",
+    photo: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=200&h=200&q=70",
+  },
+  {
+    name: "Ibrahim K.", city: "Wuse · Abuja", payout: 31200,
+    q: "The agent at my hub is sharp. Drop, weigh, pay — under three minutes every time.",
+    photo: "https://images.unsplash.com/photo-1542178243-bc20204b769f?auto=format&fit=crop&w=200&h=200&q=70",
+  },
+  {
+    name: "Folake A.", city: "Yaba · Lagos", payout: 22400,
+    q: "I cash out to airtime instantly. My kids' data stays on. My block stays clean.",
+    photo: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&h=200&q=70",
+  },
+];
+
+const PEOPLE = [
+  {
+    src: "https://images.unsplash.com/photo-1604187351574-c75ca79f5807?auto=format&fit=crop&w=900&q=70",
+    alt: "A young African man sorting plastic bottles at a recycling hub",
+    tag: "Hub agent · Surulere",
+    caption: "Bola verifies 184 drops a day with a rugged scale and a Tecno phone.",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=900&q=70",
+    alt: "Coloured recycling bins for sorting waste",
+    tag: "On the street",
+    caption: "Sort PET, cans, paper and glass. The colour-coded bins do the rest.",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1582408921715-18e7806365c1?auto=format&fit=crop&w=900&q=70",
+    alt: "Recycling worker pressing PET bottles into a bale",
+    tag: "Processing partner · Apapa",
+    caption: "Indorama bales 1.4 tonnes of PET an hour into food-grade flake.",
+  },
+  {
+    src: "https://images.unsplash.com/photo-1611284446314-60a58ac0deb9?auto=format&fit=crop&w=900&q=70",
+    alt: "Hands holding a cluster of crushed plastic bottles",
+    tag: "Drops, drops, drops",
+    caption: "Every bottle weighed and paid. No middlemen, no waiting.",
+  },
 ];
 
 export default function Home() {
@@ -43,6 +82,7 @@ export default function Home() {
     <>
       <Hero />
       <Partners />
+      <RealPeople />
       <ImpactStats />
       <HowItWorksSection />
       <CategoriesSection />
@@ -51,6 +91,44 @@ export default function Home() {
       <BrandCTA />
       <FinalCTA />
     </>
+  );
+}
+
+function RealPeople() {
+  return (
+    <section className="bg-white py-16 sm:py-20">
+      <div className="container-page">
+        <div className="mb-10 grid gap-6 sm:mb-12 lg:grid-cols-12 lg:items-end">
+          <div className="lg:col-span-7">
+            <Eyebrow>The faces behind every kilo</Eyebrow>
+            <h2 className="mt-3 text-h2 font-extrabold leading-tight text-balance sm:text-h1">
+              Built by Africans, for Africans — every drop has a face and a story.
+            </h2>
+          </div>
+          <p className="text-textgray lg:col-span-5">
+            From a hub agent in Surulere to a baling line in Apapa, this is what the circular economy looks like when it actually works for the people doing the work.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {PEOPLE.map((p) => (
+            <figure key={p.src} className="group relative overflow-hidden rounded-2xl bg-charcoal/5">
+              <div className="aspect-[4/5] overflow-hidden">
+                <img
+                  src={p.src}
+                  alt={p.alt}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                />
+              </div>
+              <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-charcoal/90 via-charcoal/40 to-transparent p-4 text-white">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-accent">{p.tag}</div>
+                <div className="mt-1 text-sm font-bold leading-snug">{p.caption}</div>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -69,7 +147,7 @@ function Hero() {
           <motion.h1
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.05 }}
-            className="mt-6 text-display-xl font-extrabold leading-[0.95] tracking-tighter text-balance"
+            className="mt-5 text-display font-extrabold leading-[0.95] tracking-tight text-balance sm:mt-6 sm:text-display-xl sm:tracking-tighter"
           >
             Drop your waste.
             <br />
@@ -331,9 +409,12 @@ function Testimonials() {
                 "{t.q}"
               </blockquote>
               <figcaption className="mt-6 flex items-center gap-3 border-t border-bordergray pt-5">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-mint font-display text-sm font-extrabold text-primary">
-                  {t.name.split(" ").map((n) => n[0]).join("")}
-                </div>
+                <img
+                  src={t.photo}
+                  alt={`Portrait of ${t.name}`}
+                  loading="lazy"
+                  className="h-10 w-10 rounded-full object-cover ring-2 ring-mint"
+                />
                 <div className="flex-1">
                   <div className="text-sm font-bold">{t.name}</div>
                   <div className="text-xs text-textgray">{t.city}</div>
@@ -364,7 +445,7 @@ function BrandCTA() {
             Hit your EPR targets — with photos, weights and signatures to prove it.
           </h2>
           <p className="mt-5 max-w-xl text-white/70">
-            Recovang is Africa's first transparent, real-time ledger that gives FMCG brands proof of every kilogram recovered against their post-consumer waste obligations. Born in Nigeria, now scaling across the continent.
+            Recovang is Africa's first transparent, real-time ledger that gives FMCG brands proof of every kilogram recovered against their post-consumer waste obligations. Born and built in Nigeria, scaling across the continent.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/contact" className="btn-gold">Talk to brand partnerships <ArrowRight size={16} /></Link>
