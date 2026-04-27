@@ -1,222 +1,140 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate, Link, useParams } from 'react-router-dom';
-import { 
-  User, 
-  Mail, 
-  Lock, 
-  MapPin, 
-  Phone, 
-  ChevronRight, 
-  ArrowLeft,
-  Building2,
-  ShieldCheck,
-  Recycle,
-  Truck,
-  CheckCircle2
-} from 'lucide-react';
-import axios from 'axios';
-import Logo from '../../components/ui/Logo';
-import Button from '../../components/ui/Button';
-import TextField from '../../components/ui/TextField';
-import { cn } from '../../lib/utils';
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { ArrowRight, Check, ChevronRight, Mail, Phone, Shield, User, Wallet } from "lucide-react";
+import { AuthShell } from "./Login";
+import { DEMO_USERS, useAuth, type UserRole } from "@/store/auth";
 
-const Register: React.FC = () => {
-  const navigate = useNavigate();
+const ROLES: { v: UserRole; t: string; d: string }[] = [
+  { v: "collector", t: "I collect waste", d: "Drop bottles, cans, paper. Earn cash." },
+  { v: "agent", t: "I want to run a hub", d: "Verify drops, manage hub, earn commission." },
+  { v: "logistics", t: "I have vehicles", d: "Move material between hubs and recyclers." },
+];
+
+export default function Register() {
+  const nav = useNavigate();
+  const { setSession } = useAuth();
   const [step, setStep] = useState(1);
-  const [role, setRole] = useState<string | null>(null);
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    phoneNumber: '',
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [role, setRole] = useState<UserRole>("collector");
+  const steps = ["Account", "Role", "Verify"];
 
-  const handleRegister = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, {
-        ...formData,
-        role: role as any
-      });
-      
-      if (response.data.status === 'success') {
-        handleNext();
-      } else {
-        throw new Error(response.data.message || 'Registration failed');
-      }
-    } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Registration failed');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const ROLES = [
-    { id: 'collector', title: 'Collector', desc: 'Recycle waste and earn money.', icon: <Recycle size={32} /> },
-    { id: 'agent', title: 'Hub Agent', desc: 'Verify and manage hub operations.', icon: <ShieldCheck size={32} /> },
-    { id: 'brand', title: 'Brand Partner', desc: 'EPR compliance and impact tracking.', icon: <Building2 size={32} /> },
-    { id: 'factory', title: 'Factory', desc: 'Source raw recycled materials.', icon: <Building2 size={32} /> },
-    { id: 'logistics', title: 'Logistics', desc: 'Manage fleet and pickup tasks.', icon: <Truck size={32} /> },
-  ];
-
-  const handleNext = () => setStep(step + 1);
-  const handleBack = () => setStep(step - 1);
+  function complete() {
+    const user = DEMO_USERS[role];
+    setSession(user, "demo.token." + role);
+    nav(`/${role}/dashboard`);
+  }
 
   return (
-    <div className="min-h-screen bg-offwhite flex items-center justify-center p-6 py-20">
-      <div className="w-full max-w-2xl">
-        <div className="text-center mb-10">
-          <Link to="/" className="inline-block mb-6">
-            <Logo size={48} variant="stacked" />
-          </Link>
-          <h1 className="text-h1">Join Recovang</h1>
-          <p className="text-textgray text-small">Building a cleaner world, one piece at a time.</p>
-        </div>
+    <AuthShell>
+      <div className="mb-7 flex items-center gap-2">
+        {steps.map((s, i) => {
+          const idx = i + 1;
+          const done = idx < step;
+          const active = idx === step;
+          return (
+            <div key={s} className="flex flex-1 items-center gap-2">
+              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-extrabold ${
+                done ? "bg-success text-white" : active ? "bg-charcoal text-white" : "bg-charcoal/8 text-charcoal/40"
+              }`}>{done ? <Check size={12} /> : idx}</div>
+              <span className={`text-[11px] font-bold uppercase tracking-widest ${active || done ? "text-charcoal" : "text-charcoal/40"}`}>{s}</span>
+              {idx < steps.length && <div className={`h-px flex-1 ${done ? "bg-success" : "bg-bordergray"}`} />}
+            </div>
+          );
+        })}
+      </div>
 
-        <div className="bg-white p-8 lg:p-12 rounded-[40px] shadow-soft border border-bordergray">
-          {/* Progress Bar */}
-          <div className="flex gap-2 mb-10">
-            {[1, 2, 3].map(i => (
-              <div key={i} className={cn(
-                "h-1.5 flex-1 rounded-full transition-all duration-500",
-                step >= i ? "bg-primary" : "bg-offwhite"
-              )} />
+      {step === 1 && (
+        <>
+          <h1 className="text-h1 font-extrabold leading-tight text-balance">Create your account</h1>
+          <p className="mt-2 text-textgray">Takes about 60 seconds. No NIN required to start.</p>
+          <div className="mt-6 space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="label">First name</label>
+                <input className="input" defaultValue="Adaeze" />
+              </div>
+              <div>
+                <label className="label">Last name</label>
+                <input className="input" defaultValue="Nwosu" />
+              </div>
+            </div>
+            <div>
+              <label className="label">Email</label>
+              <div className="relative">
+                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
+                <input className="input pl-10" defaultValue="adaeze@example.com" />
+              </div>
+            </div>
+            <div>
+              <label className="label">Phone</label>
+              <div className="relative">
+                <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
+                <input className="input pl-10" defaultValue="+234 803 555 0182" />
+              </div>
+            </div>
+            <div>
+              <label className="label">Password</label>
+              <input className="input" type="password" defaultValue="demo-pass" />
+              <div className="help">8+ characters. Mix in a number for bonus security.</div>
+            </div>
+            <button onClick={() => setStep(2)} className="btn-primary btn-lg w-full">Continue <ChevronRight size={16} /></button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && (
+        <>
+          <h1 className="text-h1 font-extrabold leading-tight text-balance">Pick your role</h1>
+          <p className="mt-2 text-textgray">You can switch later in your settings.</p>
+          <div className="mt-6 space-y-3">
+            {ROLES.map((r) => (
+              <button
+                key={r.v}
+                onClick={() => setRole(r.v)}
+                className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${
+                  role === r.v ? "border-primary bg-mint ring-4 ring-primary/10" : "border-bordergray hover:border-primary/50"
+                }`}
+              >
+                <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${role === r.v ? "bg-grad-primary text-white" : "bg-cream text-charcoal/70"}`}>
+                  {r.v === "collector" ? <Wallet size={18} /> : r.v === "agent" ? <User size={18} /> : <Shield size={18} />}
+                </div>
+                <div className="flex-1">
+                  <div className="text-base font-extrabold">{r.t}</div>
+                  <div className="text-xs text-textgray">{r.d}</div>
+                </div>
+                <div className={`h-5 w-5 rounded-full border-2 ${role === r.v ? "border-primary bg-primary" : "border-bordergray"}`}>
+                  {role === r.v && <Check size={12} className="m-auto mt-0.5 text-white" />}
+                </div>
+              </button>
             ))}
           </div>
+          <div className="mt-6 flex gap-3">
+            <button onClick={() => setStep(1)} className="btn-outline flex-1">Back</button>
+            <button onClick={() => setStep(3)} className="btn-primary flex-1">Continue <ChevronRight size={16} /></button>
+          </div>
+        </>
+      )}
 
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <motion.div 
-                key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div className="space-y-1">
-                  <h3 className="text-h2">Choose your role</h3>
-                  <p className="text-textgray text-small">Select how you want to participate in the ecosystem.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {ROLES.map(r => (
-                    <button 
-                      key={r.id}
-                      onClick={() => { setRole(r.id); handleNext(); }}
-                      className={cn(
-                        "p-6 rounded-3xl border-2 transition-all text-left flex flex-col gap-4 group",
-                        role === r.id ? "border-primary bg-mint" : "border-offwhite bg-offwhite hover:border-primary/20"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-12 h-12 rounded-2xl flex items-center justify-center transition-all",
-                        role === r.id ? "bg-primary text-white" : "bg-white text-textgray group-hover:text-primary"
-                      )}>
-                        {r.icon}
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-charcoal">{r.title}</h4>
-                        <p className="text-ui text-textgray leading-tight">{r.desc}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {step === 2 && (
-              <motion.div 
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-6"
-              >
-                <div className="flex items-center gap-2">
-                  <button onClick={handleBack} className="p-2 -ml-2 text-textgray hover:text-charcoal"><ArrowLeft size={20} /></button>
-                  <h3 className="text-h2">Account Info</h3>
-                </div>
-                {error && (
-                  <div className="p-4 bg-error/10 border border-error/20 rounded-xl text-error text-ui font-bold">
-                    {error}
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <TextField 
-                    label="First Name" 
-                    placeholder="Samuel" 
-                    icon={<User size={20} />} 
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  />
-                  <TextField 
-                    label="Last Name" 
-                    placeholder="Musa" 
-                    icon={<User size={20} />} 
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  />
-                  <TextField 
-                    label="Email Address" 
-                    type="email" 
-                    placeholder="sam@example.com" 
-                    icon={<Mail size={20} />} 
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  />
-                  <TextField 
-                    label="Phone Number" 
-                    placeholder="08012345678" 
-                    icon={<Phone size={20} />} 
-                    value={formData.phoneNumber}
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                  />
-                  <div className="md:col-span-2">
-                    <TextField 
-                      label="Password" 
-                      type="password" 
-                      placeholder="••••••••" 
-                      icon={<Lock size={20} />} 
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <Button className="w-full h-[56px]" onClick={handleRegister} isLoading={isLoading}>
-                  Create Account <ChevronRight size={20} />
-                </Button>
-              </motion.div>
-            )}
-
-            {step === 3 && (
-              <motion.div 
-                key="step3"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="space-y-8 text-center py-6"
-              >
-                <div className="w-24 h-24 bg-success/10 rounded-full flex items-center justify-center mx-auto text-success">
-                  <CheckCircle2 size={48} />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-h2">Almost there!</h3>
-                  <p className="text-textgray">We've sent a verification link to your email. Click it to activate your account.</p>
-                </div>
-                <div className="pt-4 space-y-4">
-                  <Button className="w-full" onClick={() => navigate('/login')}>Go to Login</Button>
-                  <button className="text-ui font-bold text-primary hover:underline">Resend Email</button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-    </div>
+      {step === 3 && (
+        <>
+          <h1 className="text-h1 font-extrabold leading-tight text-balance">Verify your phone</h1>
+          <p className="mt-2 text-textgray">We sent a 6-digit code to your number. Enter it below.</p>
+          <div className="mt-6">
+            <div className="flex justify-center gap-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <input
+                  key={i}
+                  maxLength={1}
+                  defaultValue={"864207"[i]}
+                  className="h-14 w-12 rounded-xl border border-bordergray bg-white text-center font-mono text-xl font-extrabold focus:border-primary focus:ring-4 focus:ring-primary/10"
+                />
+              ))}
+            </div>
+            <div className="help mt-3 text-center">Didn't get it? <button className="font-bold text-primary">Resend in 27s</button></div>
+          </div>
+          <button onClick={complete} className="btn-primary btn-lg mt-7 w-full">Open my {role} dashboard <ArrowRight size={16} /></button>
+          <p className="mt-4 text-center text-xs text-textgray">By continuing, you agree to our <Link to="/terms" className="font-bold text-primary">Terms</Link> and <Link to="/privacy" className="font-bold text-primary">Privacy Policy</Link>.</p>
+        </>
+      )}
+    </AuthShell>
   );
-};
-
-export default Register;
+}

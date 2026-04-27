@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuth } from '../store/auth.store';
+import { useAuth } from '../store/auth';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1',
@@ -21,28 +21,10 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        const refreshToken = useAuth.getState().refreshToken;
-        const { data } = await axios.post(`${api.defaults.baseURL}/auth/refresh`, { refreshToken });
-
-        const { accessToken, refreshToken: newRefreshToken } = data.data;
-        useAuth.getState().setToken(accessToken);
-        useAuth.getState().setRefreshToken(newRefreshToken);
-        
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-        return api(originalRequest);
-      } catch (refreshError) {
-        useAuth.getState().logout();
-        return Promise.reject(refreshError);
-      }
+  (error) => {
+    if (error.response?.status === 401) {
+      useAuth.getState().signOut();
     }
-
     return Promise.reject(error);
   }
 );

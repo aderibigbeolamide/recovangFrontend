@@ -1,34 +1,150 @@
-import { Truck } from "lucide-react";
-import { PageHeader, Section, StatCard, StatusPill } from "@/components/ui";
+import { Activity, Building2, ChevronDown, Filter, Fuel, MapPin, Navigation, Package, Plus, Route, Search, ShieldCheck, Star, Truck } from "lucide-react";
+import { Avatar, KPICard, PageHeader, StatusPill } from "@/components/ui";
+import { ProgressBar } from "@/components/charts";
+import { CategoryIcon } from "@/components/illustrations";
+import { formatNaira } from "@/lib/cn";
+
+const PARTNERS = [
+  { name: "GreenWheels Nigeria", trucks: 8, drivers: 12, rating: 4.9, trips: 2418, on: 96, rev: 48400000, cities: ["Lagos", "Ibadan"] },
+  { name: "BlueArrow Logistics", trucks: 12, drivers: 18, rating: 4.8, trips: 3104, on: 94, rev: 62400000, cities: ["Lagos", "Abeokuta"] },
+  { name: "PalmCargo Movers", trucks: 6, drivers: 9, rating: 4.7, trips: 1820, on: 91, rev: 32400000, cities: ["PH", "Calabar"] },
+  { name: "Sahel Express", trucks: 9, drivers: 14, rating: 4.6, trips: 2104, on: 89, rev: 38800000, cities: ["Abuja", "Kano"] },
+  { name: "Naija Haulage", trucks: 14, drivers: 22, rating: 4.5, trips: 3418, on: 87, rev: 71200000, cities: ["Lagos", "Ibadan", "PH"] },
+  { name: "Lagos Freight Co.", trucks: 5, drivers: 7, rating: 4.4, trips: 1240, on: 92, rev: 21800000, cities: ["Lagos"] },
+  { name: "Triton Movers", trucks: 7, drivers: 11, rating: 4.6, trips: 1890, on: 93, rev: 32100000, cities: ["Lagos", "Ogun"] },
+  { name: "Eagle Cargo", trucks: 7, drivers: 9, rating: 4.5, trips: 1610, on: 90, rev: 28100000, cities: ["Abuja", "Jos"] },
+];
+
+const ROUTES = [
+  { id: "RT-018", from: "Surulere · Lagos", to: "Ikorodu Recycler", load: "PET 1.2t", eta: "27 min", driver: "Suleiman M.", partner: "GreenWheels", status: "in-transit", progress: 64 },
+  { id: "RT-017", from: "Yaba Centre · Lagos", to: "Apapa Port", load: "Cardboard 2.4t", eta: "1h 12m", driver: "Femi A.", partner: "BlueArrow", status: "in-transit", progress: 32 },
+  { id: "RT-016", from: "GRA · Port Harcourt", to: "PH Recycler", load: "Glass 1.8t", eta: "Loading", driver: "Pius O.", partner: "PalmCargo", status: "loading", progress: 8 },
+  { id: "RT-015", from: "Wuse · Abuja", to: "Idu Industrial", load: "Aluminium 0.9t", eta: "ETA 18m", driver: "Bashir L.", partner: "Sahel Express", status: "in-transit", progress: 78 },
+];
 
 export default function AdminLogistics() {
   return (
     <>
-      <PageHeader title="Logistics oversight" subtitle="Manage logistics partners, allocate pickups and monitor SLAs." />
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <StatCard tone="green" label="Active partners" value="38" icon={<Truck size={18} />} />
-        <StatCard tone="gold" label="Pickups today" value="184" delta="↑ 12% vs yesterday" />
-        <StatCard label="On-time rate" value="94.2%" delta="SLA target 90%" />
+      <PageHeader
+        eyebrow="Logistics ops"
+        title="Fleet & route control"
+        subtitle="Live view of every truck, partner and route across Recovang. Spot delays, rebalance loads, audit performance."
+        actions={
+          <>
+            <button className="btn-outline"><Activity size={14} /> Map view</button>
+            <button className="btn-primary"><Plus size={14} /> Manual route</button>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-4">
+        <KPICard label="Active partners" value="8" sub="68 trucks" icon={Truck} variant="primary" />
+        <KPICard label="In-transit trucks" value="14" sub="46 idle" icon={Navigation} />
+        <KPICard label="Today's tonnage" value="84.2 t" sub="+ 18% vs yesterday" icon={Package} variant="gold" />
+        <KPICard label="On-time platform-wide" value="92%" sub="Last 30 days" icon={ShieldCheck} variant="dark" />
       </div>
-      <Section title="Partners">
-        <div className="overflow-x-auto rounded-xl border border-bordergray">
-          <table className="min-w-full text-sm">
-            <thead className="bg-offwhite text-left text-xs uppercase text-textgray">
-              <tr><th className="px-4 py-3">Partner</th><th className="px-4 py-3">Cities</th><th className="px-4 py-3">Fleet</th><th className="px-4 py-3 text-right">Pickups (30d)</th><th className="px-4 py-3">Status</th></tr>
-            </thead>
-            <tbody className="divide-y divide-bordergray bg-white">
-              {[
-                { n: "Kunle Logistics Ltd", c: "Lagos · Ogun · Oyo", f: "4 trucks", p: 482, s: "verified" as const },
-                { n: "Sahara Movers", c: "Abuja · Nasarawa", f: "3 trucks", p: 318, s: "verified" as const },
-                { n: "Niger Delta Freight", c: "Port Harcourt · Bayelsa", f: "5 trucks", p: 401, s: "verified" as const },
-                { n: "Greater Kano Cartage", c: "Kano · Kaduna", f: "2 trucks", p: 142, s: "pending" as const },
-              ].map((r) => (
-                <tr key={r.n}><td className="px-4 py-3 font-semibold">{r.n}</td><td className="px-4 py-3">{r.c}</td><td className="px-4 py-3 text-textgray">{r.f}</td><td className="px-4 py-3 text-right font-mono">{r.p}</td><td className="px-4 py-3"><StatusPill status={r.s} /></td></tr>
-              ))}
-            </tbody>
-          </table>
+
+      {/* Live routes map */}
+      <div className="mt-6 card overflow-hidden">
+        <div className="flex items-center justify-between border-b border-bordergray p-6">
+          <div>
+            <h3 className="text-h4">Live routes</h3>
+            <p className="text-sm text-textgray">14 trucks moving material right now</p>
+          </div>
+          <span className="badge-success inline-flex items-center gap-1"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" /> Live</span>
         </div>
-      </Section>
+
+        {/* Map mock */}
+        <div className="relative h-64 bg-grad-mint">
+          <div className="absolute inset-0 bg-grid opacity-50" />
+          <svg viewBox="0 0 800 240" className="absolute inset-0 h-full w-full">
+            <path d="M0 140 C 200 90, 380 200, 540 130 S 780 80, 800 140" stroke="#1A6B3C" strokeOpacity="0.25" strokeWidth="22" fill="none" />
+            <path d="M0 80 C 240 60, 400 150, 600 90 S 800 60, 800 60" stroke="#D4A017" strokeOpacity="0.18" strokeWidth="14" fill="none" />
+          </svg>
+          {ROUTES.map((r, i) => (
+            <div key={r.id} className="absolute" style={{ left: `${15 + i * 18}%`, top: `${25 + (i % 3) * 22}%` }}>
+              <div className="relative">
+                <div className="grid h-9 w-9 place-items-center rounded-full bg-accent text-charcoal shadow-lift">
+                  <Truck size={14} />
+                </div>
+                <div className="absolute -inset-2 animate-pulseRing rounded-full bg-accent/20" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <table className="tbl">
+          <thead>
+            <tr><th>Route</th><th>From → To</th><th>Load</th><th>Driver / partner</th><th>Progress</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {ROUTES.map((r) => (
+              <tr key={r.id}>
+                <td className="font-mono text-xs font-bold text-primary">{r.id}</td>
+                <td>
+                  <div className="font-bold">{r.from}</div>
+                  <div className="text-[11px] text-textgray">→ {r.to}</div>
+                </td>
+                <td className="font-mono">{r.load}</td>
+                <td>
+                  <div className="font-bold">{r.driver}</div>
+                  <div className="text-[11px] text-textgray">{r.partner}</div>
+                </td>
+                <td className="min-w-[140px]">
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-24 overflow-hidden rounded-full bg-charcoal/8">
+                      <div className="h-full rounded-full bg-grad-primary" style={{ width: `${r.progress}%` }} />
+                    </div>
+                    <span className="font-mono text-xs">{r.progress}%</span>
+                  </div>
+                </td>
+                <td><StatusPill status={r.status === "in-transit" ? "info" : "warning"} label={r.eta} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Partners */}
+      <div className="mt-6 card overflow-hidden">
+        <div className="flex flex-wrap items-center gap-3 border-b border-bordergray bg-cream/40 p-4">
+          <h3 className="text-h4">Logistics partners</h3>
+          <div className="flex-1" />
+          <button className="btn-outline btn-sm"><Filter size={12} /> All states</button>
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-textgray" />
+            <input className="input h-9 pl-9 text-sm" placeholder="Search partners" />
+          </div>
+        </div>
+        <table className="tbl">
+          <thead><tr><th>Partner</th><th>Fleet</th><th>Rating</th><th>Trips</th><th>On-time</th><th>Cities</th><th className="text-right">Lifetime payout</th></tr></thead>
+          <tbody>
+            {PARTNERS.map((p) => (
+              <tr key={p.name}>
+                <td>
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-9 w-9 place-items-center rounded-xl bg-grad-primary text-white"><Truck size={14} /></div>
+                    <span className="font-bold">{p.name}</span>
+                  </div>
+                </td>
+                <td className="font-mono">{p.trucks}T · {p.drivers}D</td>
+                <td><span className="inline-flex items-center gap-1 font-extrabold"><Star size={12} className="fill-accent text-accent" /> {p.rating}</span></td>
+                <td className="font-mono">{p.trips.toLocaleString()}</td>
+                <td>
+                  <div className="flex items-center gap-2">
+                    <div className="h-1.5 w-16 overflow-hidden rounded-full bg-charcoal/8">
+                      <div className="h-full rounded-full bg-success" style={{ width: `${p.on}%` }} />
+                    </div>
+                    <span className="font-mono text-xs">{p.on}%</span>
+                  </div>
+                </td>
+                <td className="text-textgray">{p.cities.join(", ")}</td>
+                <td className="text-right"><span className="money">{formatNaira(p.rev)}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }

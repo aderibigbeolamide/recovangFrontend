@@ -1,68 +1,158 @@
 import { useState } from "react";
-import { Camera, CheckCircle2, ScanLine, X } from "lucide-react";
-import { PageHeader, Section } from "@/components/ui";
+import { ArrowRight, Camera, Check, ChevronRight, QrCode, Scale, Search, ShieldCheck, Sparkles, X } from "lucide-react";
+import { Avatar, PageHeader } from "@/components/ui";
+import { CategoryIcon } from "@/components/illustrations";
 import { formatNaira } from "@/lib/cn";
 
+const QUEUE = [
+  { id: "RX-2419", name: "Adaeze Nwosu", phone: "+234 803 555 0182", cat: "PET Bottles", est: 4.2, photos: 3, eta: "5 min" },
+  { id: "RX-2418", name: "Tunde Bello", phone: "+234 803 555 0211", cat: "Cardboard", est: 6.0, photos: 2, eta: "12 min" },
+  { id: "RX-2417", name: "Maryam Sani", phone: "+234 803 555 0344", cat: "Aluminium Cans", est: 1.8, photos: 4, eta: "Arrived" },
+  { id: "RX-2416", name: "Joy Eze", phone: "+234 803 555 0455", cat: "Mixed Paper", est: 3.4, photos: 1, eta: "8 min" },
+  { id: "RX-2415", name: "Wale Aboderin", phone: "+234 803 555 0566", cat: "Glass Bottles", est: 9.2, photos: 2, eta: "15 min" },
+  { id: "RX-2414", name: "Aisha Yusuf", phone: "+234 803 555 0677", cat: "PET Bottles", est: 5.6, photos: 3, eta: "20 min" },
+  { id: "RX-2413", name: "Chinedu Okeke", phone: "+234 803 555 0788", cat: "E-Waste", est: 0.8, photos: 5, eta: "—" },
+];
+
+const RATES: Record<string, number> = {
+  "PET Bottles": 200, "Cardboard": 80, "Aluminium Cans": 600, "Mixed Paper": 60, "Glass Bottles": 30, "E-Waste": 1200,
+};
+
 export default function AgentVerify() {
-  const [step, setStep] = useState(1);
+  const [active, setActive] = useState(QUEUE[0].id);
+  const [actualKg, setActualKg] = useState(4.2);
+  const sel = QUEUE.find((q) => q.id === active)!;
+  const rate = RATES[sel.cat];
+  const payout = Math.round(actualKg * rate);
+
   return (
     <>
-      <PageHeader title="Verify submission" subtitle="Scan the collector's QR, enter the actual weight, then approve or reject." />
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-        <Section title="Step 1 · Scan QR">
-          <div className="flex aspect-square items-center justify-center rounded-2xl border-2 border-dashed border-primary bg-mint/40">
-            <div className="text-center">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-white text-primary shadow-soft">
-                <ScanLine size={26} />
-              </div>
-              <p className="mt-3 font-display font-bold">Point camera at QR</p>
-              <p className="text-xs text-textgray">QR will auto-detect within 2 seconds.</p>
-              <button onClick={() => setStep(2)} className="btn-primary mt-4">Simulate scan</button>
+      <PageHeader
+        eyebrow="Verify drops"
+        title="Drop verifier"
+        subtitle="Scan QR, weigh, snap, confirm. Average verification time today: 47 seconds."
+        actions={<button className="btn-primary"><QrCode size={14} /> Scan QR</button>}
+      />
+
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Queue */}
+        <div className="lg:col-span-5">
+          <div className="card p-3">
+            <div className="relative mb-2">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-textgray" />
+              <input className="input h-9 pl-9 text-sm" placeholder="Search by name, phone or drop ID" />
+            </div>
+            <div className="space-y-2">
+              {QUEUE.map((q) => (
+                <button
+                  key={q.id}
+                  onClick={() => { setActive(q.id); setActualKg(q.est); }}
+                  className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
+                    active === q.id ? "border-primary bg-mint" : "border-transparent hover:bg-cream"
+                  }`}
+                >
+                  <Avatar name={q.name} size={40} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-extrabold">{q.name}</span>
+                      <span className="font-mono text-[10px] text-primary">{q.id}</span>
+                    </div>
+                    <div className="text-xs text-textgray">{q.cat} · ~{q.est}kg</div>
+                  </div>
+                  <span className={`badge ${q.eta === "Arrived" ? "badge-success" : "bg-cream text-textgray"}`}>{q.eta}</span>
+                </button>
+              ))}
             </div>
           </div>
-        </Section>
+        </div>
 
-        <div className="space-y-6">
-          <Section title="Step 2 · Confirm details">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Info label="Collector" value="Adaeze Nwosu" />
-              <Info label="Submission ID" value="RX-2419" mono />
-              <Info label="Phone" value="+234 801 234 5678" mono />
-              <Info label="Claimed material" value="PET Plastic" />
-              <Info label="Claimed weight" value="4.2 kg" mono />
-              <Info label="Estimated payout" value={formatNaira(840)} mono accent />
-            </div>
-          </Section>
-          <Section title="Step 3 · Actual weight & photo">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="label">Actual weight (kg)</label>
-                <input className="input font-mono" defaultValue="4.2" />
+        {/* Verifier */}
+        <div className="lg:col-span-7">
+          <div className="card overflow-hidden">
+            <div className="flex items-center justify-between border-b border-bordergray bg-cream/40 p-6">
+              <div className="flex items-center gap-3">
+                <Avatar name={sel.name} size={48} />
+                <div>
+                  <div className="font-extrabold text-charcoal">{sel.name}</div>
+                  <div className="text-xs text-textgray">{sel.phone} · Drop {sel.id}</div>
+                </div>
               </div>
-              <div>
-                <label className="label">Material confirmed</label>
-                <select className="input"><option>PET Plastic</option><option>HDPE Plastic</option><option>Mixed Paper</option></select>
+              <span className="badge-mint inline-flex items-center gap-1"><ShieldCheck size={12} /> Verified collector</span>
+            </div>
+
+            <div className="p-6">
+              <div className="grid items-stretch gap-5 sm:grid-cols-2">
+                <div className="rounded-2xl border border-bordergray bg-cream p-5">
+                  <div className="flex items-center gap-3">
+                    <CategoryIcon category={sel.cat} size={48} />
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Material</div>
+                      <div className="text-base font-extrabold">{sel.cat}</div>
+                      <div className="font-mono text-xs text-primary">{formatNaira(rate)}/kg</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-baseline justify-between border-t border-bordergray pt-3">
+                    <span className="text-xs text-textgray">Collector estimated</span>
+                    <span className="font-mono font-extrabold">{sel.est} kg</span>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border-2 border-primary bg-mint/40 p-5">
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
+                    <Scale size={12} /> Hub-scale weight
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <button onClick={() => setActualKg((k) => Math.max(0, k - 0.1))} className="grid h-10 w-10 place-items-center rounded-xl border border-bordergray bg-white">−</button>
+                    <input
+                      value={actualKg.toFixed(1)}
+                      onChange={(e) => setActualKg(parseFloat(e.target.value) || 0)}
+                      step="0.1"
+                      type="number"
+                      className="input h-10 flex-1 text-center font-mono text-2xl font-extrabold"
+                    />
+                    <button onClick={() => setActualKg((k) => k + 0.1)} className="grid h-10 w-10 place-items-center rounded-xl border border-bordergray bg-white">+</button>
+                  </div>
+                  <div className="mt-2 text-center text-xs text-textgray">Auto-pulled from scale Bluetooth</div>
+                </div>
+              </div>
+
+              {/* Photos */}
+              <div className="mt-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Photos · {sel.photos} attached</div>
+                  <button className="btn-outline btn-sm"><Camera size={12} /> Add photo</button>
+                </div>
+                <div className="grid grid-cols-4 gap-2">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className={`aspect-square rounded-xl ${i < sel.photos ? "bg-grad-mint" : "border-2 border-dashed border-bordergray bg-cream"} grid place-items-center`}>
+                      {i < sel.photos ? <Camera size={18} className="text-primary" /> : <span className="text-xs text-textgray/50">—</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payout summary */}
+              <div className="card-dark mt-5 flex items-center gap-5 p-5">
+                <div className="flex-1">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-accent">Pay collector</div>
+                  <div className="mt-1 font-mono text-3xl font-extrabold text-white">
+                    <span className="text-accent">₦</span>{payout.toLocaleString("en-NG")}
+                  </div>
+                  <div className="mt-1 text-[11px] text-white/60">{actualKg.toFixed(1)} kg × {formatNaira(rate)}/kg · Hub commission ₦{Math.round(payout * 0.06)}</div>
+                </div>
+                <button className="btn-gold btn-lg">
+                  Approve & pay <ArrowRight size={16} />
+                </button>
+              </div>
+
+              <div className="mt-3 flex justify-between text-xs">
+                <button className="font-bold text-error hover:underline inline-flex items-center gap-1"><X size={12} /> Reject (with reason)</button>
+                <button className="font-bold text-textgray hover:underline">Save & next <ChevronRight size={12} className="inline" /></button>
               </div>
             </div>
-            <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-bordergray bg-offwhite px-4 py-6 text-sm font-semibold text-textgray hover:border-primary hover:text-primary">
-              <Camera size={18} /> Take photo of load
-            </button>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <button className="btn-outline text-error border-error/40 hover:bg-error/5"><X size={16} /> Reject</button>
-              <button className="btn-primary"><CheckCircle2 size={16} /> Approve & pay</button>
-            </div>
-          </Section>
+          </div>
         </div>
       </div>
     </>
-  );
-}
-
-function Info({ label, value, mono, accent }: { label: string; value: string; mono?: boolean; accent?: boolean }) {
-  return (
-    <div className="rounded-xl border border-bordergray bg-offwhite p-3">
-      <div className="text-xs uppercase tracking-wider text-textgray">{label}</div>
-      <div className={`mt-1 font-bold ${mono ? "font-mono" : ""} ${accent ? "text-accent-500" : "text-charcoal"}`}>{value}</div>
-    </div>
   );
 }

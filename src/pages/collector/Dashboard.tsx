@@ -1,203 +1,190 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  TrendingUp, 
-  ArrowUpRight, 
-  Package, 
-  Zap, 
-  History,
-  MapPin,
-  Plus,
-  Calculator,
-  Award,
-  Wallet as WalletIcon,
-  Search,
-  ChevronRight,
-  Clock,
-  CheckCircle2
-} from 'lucide-react';
-import GlassCard from '../../components/ui/GlassCard';
-import Button from '../../components/ui/Button';
-import NewSubmissionModal from '../../components/modals/NewSubmissionModal';
-import { cn } from '../../lib/utils';
-import { useAuth } from '../../store/auth.store';
-import { useDashboard } from '../../hooks/useCollector';
+import { Link } from "react-router-dom";
+import { ArrowRight, Award, BadgeCheck, Coins, Flame, Plus, Recycle, Sparkles, Target, TrendingUp, Upload, Wallet } from "lucide-react";
+import { KPICard, PageHeader, StatusPill } from "@/components/ui";
+import { AreaChart, Donut, ProgressRing, Sparkline } from "@/components/charts";
+import { CategoryIcon } from "@/components/illustrations";
+import { formatNaira } from "@/lib/cn";
 
-const CollectorDashboard: React.FC = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { user } = useAuth();
-  const { data: dashboard, isLoading } = useDashboard();
+const RECENT = [
+  { date: "Apr 24", hub: "Surulere Hub", cat: "PET Bottles", kg: 4.2, amt: 840, status: "verified" },
+  { date: "Apr 22", hub: "Surulere Hub", cat: "Cardboard", kg: 8.0, amt: 480, status: "verified" },
+  { date: "Apr 19", hub: "Yaba Centre", cat: "Aluminium Cans", kg: 1.1, amt: 660, status: "verified" },
+  { date: "Apr 16", hub: "Surulere Hub", cat: "Mixed Paper", kg: 5.6, amt: 280, status: "verified" },
+  { date: "Apr 13", hub: "Lekki Hub", cat: "PET Bottles", kg: 3.2, amt: 640, status: "pending" },
+];
 
-  if (isLoading) {
-    return <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-    </div>;
-  }
+const WEEKLY = [
+  { label: "M", value: 1200 }, { label: "T", value: 1800 },
+  { label: "W", value: 980 }, { label: "T", value: 2400 },
+  { label: "F", value: 2100 }, { label: "S", value: 3200 }, { label: "S", value: 2700 },
+];
 
-  const stats = dashboard || {
-    wallet: { balance: 0, pending: 0 },
-    stats: { totalWeight: 0, points: 0, streak: 0, rank: 0 },
-    recentSubmissions: []
-  };
-
+export default function CollectorDashboard() {
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-20">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-h1 mb-2">Good morning, {user?.firstName}!</h1>
-          <p className="text-textgray text-small">Ready to turn your waste into real cash today?</p>
-        </div>
+    <>
+      <PageHeader
+        eyebrow="Collector portal · Surulere · Lagos"
+        title="Welcome back, Adaeze 👋"
+        subtitle="You're 2 submissions away from unlocking the Gold Recycler badge. Strong week so far."
+        actions={
+          <>
+            <Link to="/collector/withdraw" className="btn-outline"><Wallet size={14} /> Withdraw</Link>
+            <Link to="/collector/submit" className="btn-primary"><Upload size={14} /> Submit waste</Link>
+          </>
+        }
+      />
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KPICard label="Wallet balance" value={<><span className="text-accent">₦</span>48,750</>} sub="+₦12,400 this week" icon={Wallet} variant="primary" />
+        <KPICard label="Lifetime earned" value="₦312,400" sub="across 47 submissions" icon={Coins} variant="gold" />
+        <KPICard label="KG recovered" value="218.4 kg" sub="+18.2 kg this month" icon={Recycle} trend={{ value: "+12% vs last mo", direction: "up" }} />
+        <KPICard label="Current streak" value="14 days" sub="Top 3% in Lagos" icon={Flame} trend={{ value: "+3 vs last week", direction: "up" }} />
       </div>
 
-      <NewSubmissionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
-      {/* Top — Wallet Card (full width, green gradient) */}
-      <GlassCard className="relative overflow-hidden group bg-gradient-to-br from-primary to-[#0D3D22] border-none p-10 lg:p-12 shadow-glow">
-        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
-          <WalletIcon size={200} className="text-white" />
-        </div>
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-10">
-          <div className="space-y-2">
-            <p className="text-mint text-ui font-black uppercase tracking-[0.2em]">Your Balance</p>
-            <h2 className="text-[56px] lg:text-[80px] leading-none font-mono font-black text-white tracking-tighter">
-              ₦{stats.wallet.balance.toLocaleString()}<span className="text-accent">.00</span>
-            </h2>
-          </div>
-          
-          <div className="flex gap-4">
-            <Button variant="gold" size="lg" className="px-10 h-[64px] text-charcoal shadow-gold">
-              <ArrowUpRight size={24} /> Withdraw
-            </Button>
-            <Button variant="outline" size="lg" className="px-10 h-[64px] border-white text-white hover:bg-white/10">
-              <History size={24} /> History
-            </Button>
-          </div>
-        </div>
-      </GlassCard>
-
-      {/* Main CTA (Yellow, full width, large) */}
-      <Button 
-        variant="gold" 
-        className="w-full h-[80px] text-h2 text-charcoal shadow-gold rounded-[32px] group relative overflow-hidden"
-        onClick={() => setIsModalOpen(true)}
-      >
-        <Plus size={32} className="group-hover:rotate-90 transition-transform duration-500" />
-        Submit Waste Today
-        <div className="absolute right-8 opacity-20 group-hover:opacity-40 transition-opacity">
-          <Recycle size={48} />
-        </div>
-      </Button>
-
-      {/* Quick Stats Row (4 cards) */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { label: 'Total Weight', value: `${stats.stats.totalWeight} kg`, desc: 'All time', icon: <Package className="text-primary" /> },
-          { label: 'Pending', value: `₦${stats.wallet.pending.toLocaleString()}`, desc: 'In verification', icon: <TrendingUp className="text-accent" /> },
-          { label: 'City Rank', value: `#${stats.stats.rank || 'N/A'}`, desc: 'Lagos', icon: <Award className="text-blue-500" /> },
-          { label: 'Streak', value: `${stats.stats.streak} Days`, desc: 'Keep it up!', icon: <Zap className="text-warning" /> },
-        ].map((stat, i) => (
-          <GlassCard key={i} className="p-6 border-bordergray/50 hover:-translate-y-1 transition-transform">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-offwhite flex items-center justify-center">
-                {stat.icon}
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        {/* Earnings chart */}
+        <div className="card p-6 lg:col-span-8">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Last 7 days · Earnings</div>
+              <div className="mt-2 flex items-baseline gap-3">
+                <div className="font-mono text-3xl font-extrabold">{formatNaira(14380)}</div>
+                <span className="badge-success">+ 28%</span>
               </div>
-              <span className="text-ui font-bold text-textgray uppercase tracking-widest">{stat.label}</span>
             </div>
-            <p className="text-h2 text-charcoal font-black">{stat.value}</p>
-            <p className="text-ui font-medium text-textgray">{stat.desc}</p>
-          </GlassCard>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Activity */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-h3">Recent Activity</h3>
-            <button className="text-primary text-ui font-bold hover:underline">View All History</button>
-          </div>
-          <div className="space-y-3">
-            {stats.recentSubmissions.map((sub: any) => (
-              <div key={sub.id} className="p-5 bg-white border border-bordergray rounded-2xl flex items-center justify-between hover:border-primary/30 transition-all shadow-soft group">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-mint flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                    {sub.category.includes('PET') ? <Recycle size={24} /> : <Package size={24} />}
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-charcoal">{sub.category}</h4>
-                    <p className="text-ui text-textgray font-medium">{new Date(sub.createdAt).toLocaleDateString()} • <span className="font-mono font-bold">{sub.estimatedWeight}kg</span></p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-h3 text-accent font-mono font-black">₦{sub.estimatedValue?.toLocaleString() || '0'}</p>
-                  <span className={cn(
-                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest inline-flex items-center gap-1.5",
-                    sub.status === 'verified' ? "bg-success/10 text-success" : "bg-warning/10 text-warning"
-                  )}>
-                    {sub.status === 'verified' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
-                    {sub.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {stats.recentSubmissions.length === 0 && (
-              <div className="p-10 text-center bg-offwhite rounded-3xl border border-dashed border-bordergray">
-                <p className="text-textgray font-medium">No recent activity found. Start recycling today!</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Nearby Hubs Widget */}
-        <div className="space-y-6">
-          <h3 className="text-h3">Nearby Hubs</h3>
-          <div className="p-4 bg-white border border-bordergray rounded-[32px] shadow-soft space-y-6">
-            {/* Small Map Preview Placeholder */}
-            <div className="h-48 bg-mint rounded-[24px] relative overflow-hidden flex items-center justify-center">
-              <MapPin size={48} className="text-primary/30" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-              <p className="absolute bottom-4 left-4 text-white text-[10px] font-bold uppercase tracking-widest">Live Map View</p>
-            </div>
-            
-            <div className="space-y-4">
-              {[
-                { name: 'Ikeja Hub', distance: '1.2km', status: 'Open', capacity: 85 },
-                { name: 'Maryland Point', distance: '2.8km', status: 'Open', capacity: 40 },
-                { name: 'Oregun Express', distance: '4.5km', status: 'Closing Soon', capacity: 10 },
-              ].map((hub, i) => (
-                <div key={i} className="flex items-center justify-between p-2 hover:bg-offwhite rounded-xl transition-colors cursor-pointer group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-offwhite flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all">
-                      <MapPin size={20} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-charcoal text-small">{hub.name}</p>
-                      <p className="text-ui text-textgray font-medium">{hub.distance} • <span className={hub.status === 'Open' ? 'text-success' : 'text-warning'}>{hub.status}</span></p>
-                    </div>
-                  </div>
-                  <div className="w-12 h-1.5 bg-offwhite rounded-full overflow-hidden">
-                    <div className={cn(
-                      "h-full rounded-full",
-                      hub.capacity > 80 ? "bg-error" : hub.capacity > 50 ? "bg-warning" : "bg-primary"
-                    )} style={{ width: `${hub.capacity}%` }} />
-                  </div>
-                </div>
+            <div className="flex items-center gap-1 rounded-full bg-cream p-1 text-xs font-bold">
+              {["7D", "30D", "All"].map((p, i) => (
+                <button key={p} className={`rounded-full px-3 py-1 ${i === 0 ? "bg-white text-charcoal shadow-soft" : "text-textgray"}`}>{p}</button>
               ))}
             </div>
-            <Button variant="outline" className="w-full h-[56px] text-body">Open Hub Finder</Button>
+          </div>
+          <div className="mt-6">
+            <AreaChart data={WEEKLY} height={220} />
+          </div>
+        </div>
+
+        {/* Quick actions + Goal */}
+        <div className="space-y-6 lg:col-span-4">
+          <div className="card-dark p-6">
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-accent">This week's goal</div>
+              <span className="text-[10px] font-bold uppercase text-white/60">Weekly</span>
+            </div>
+            <div className="mt-4 flex items-center gap-5">
+              <ProgressRing value={62} color="#D4A017" label="of 25kg" />
+              <div className="flex-1">
+                <div className="font-display text-2xl font-extrabold">15.5 / 25 kg</div>
+                <p className="mt-1 text-xs text-white/70">9.5 kg to hit your weekly target. Drop today and earn the +₦500 streak bonus.</p>
+              </div>
+            </div>
+          </div>
+          <div className="card p-6">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Quick actions</div>
+            <div className="mt-3 grid gap-2">
+              <QuickAction to="/collector/submit" icon={Upload} title="New submission" sub="Drop waste at any hub" />
+              <QuickAction to="/collector/withdraw" icon={Wallet} title="Withdraw" sub="Bank, airtime, bills" />
+              <QuickAction to="/collector/leaderboard" icon={Award} title="Leaderboard" sub="Climb the rankings" />
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
 
-function Recycle({ size, className }: { size: number, className?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M7 11V7a5 5 0 0 1 8.8-3.08L20 8" /><path d="M17 13v4a5 5 0 0 1-8.8 3.08L4 16" /><path d="M15 17H9" /><path d="M9 7h6" /></svg>
+      <div className="mt-6 grid gap-6 lg:grid-cols-12">
+        {/* Recent submissions */}
+        <div className="card overflow-hidden lg:col-span-8">
+          <div className="flex items-center justify-between border-b border-bordergray p-6">
+            <div>
+              <h3 className="text-h4">Recent submissions</h3>
+              <p className="text-sm text-textgray">Your last 5 verified drops</p>
+            </div>
+            <Link to="/collector/history" className="text-sm font-bold text-primary hover:text-primary-700">View all <ArrowRight size={12} className="inline" /></Link>
+          </div>
+          <table className="tbl">
+            <thead>
+              <tr><th>Date</th><th>Hub</th><th>Material</th><th>Weight</th><th className="text-right">Earned</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              {RECENT.map((r, i) => (
+                <tr key={i}>
+                  <td className="text-textgray">{r.date}</td>
+                  <td className="font-bold">{r.hub}</td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <CategoryIcon category={r.cat} size={26} />
+                      {r.cat}
+                    </div>
+                  </td>
+                  <td className="font-mono">{r.kg} kg</td>
+                  <td className="text-right"><span className="money text-success">+{formatNaira(r.amt)}</span></td>
+                  <td><StatusPill status={r.status === "verified" ? "success" : "pending"} label={r.status} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Category mix */}
+        <div className="card p-6 lg:col-span-4">
+          <h3 className="text-h4">Material mix</h3>
+          <p className="mb-5 text-sm text-textgray">Last 30 days</p>
+          <Donut
+            centerValue="218 kg"
+            centerLabel="Total"
+            data={[
+              { label: "PET Plastic", value: 96, color: "#1A6B3C" },
+              { label: "Cardboard", value: 52, color: "#D4A017" },
+              { label: "Aluminium", value: 38, color: "#3F9264" },
+              { label: "Paper", value: 32, color: "#1C1C2E" },
+            ]}
+          />
+        </div>
+      </div>
+
+      {/* Achievements row */}
+      <div className="mt-6 card p-6">
+        <div className="flex items-center justify-between">
+          <h3 className="text-h4 flex items-center gap-2"><Sparkles size={18} className="text-accent" /> Achievements unlocking soon</h3>
+          <Link to="/collector/badges" className="text-sm font-bold text-primary">All badges <ArrowRight size={12} className="inline" /></Link>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          {[
+            { name: "Gold Recycler", req: "Submit 50 drops", progress: 96, icon: BadgeCheck, color: "#D4A017" },
+            { name: "Streak Master", req: "30-day streak", progress: 47, icon: Flame, color: "#E74C3C" },
+            { name: "1 Tonne Club", req: "1,000kg lifetime", progress: 22, icon: Target, color: "#1A6B3C" },
+          ].map((b) => (
+            <div key={b.name} className="rounded-2xl border border-bordergray bg-cream p-4">
+              <div className="flex items-center gap-3">
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-white shadow-soft" style={{ color: b.color }}>
+                  <b.icon size={18} />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-extrabold">{b.name}</div>
+                  <div className="text-[11px] text-textgray">{b.req}</div>
+                </div>
+                <div className="font-mono text-sm font-bold">{b.progress}%</div>
+              </div>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-charcoal/8">
+                <div className="h-full rounded-full" style={{ width: `${b.progress}%`, background: b.color }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
   );
 }
 
-export default CollectorDashboard;
+function QuickAction({ to, icon: Icon, title, sub }: { to: string; icon: any; title: string; sub: string }) {
+  return (
+    <Link to={to} className="group flex items-center gap-3 rounded-2xl border border-transparent bg-cream px-3 py-3 transition hover:border-primary hover:bg-mint">
+      <div className="grid h-10 w-10 place-items-center rounded-xl bg-white text-primary shadow-soft">
+        <Icon size={16} />
+      </div>
+      <div className="flex-1">
+        <div className="text-sm font-extrabold text-charcoal">{title}</div>
+        <div className="text-[11px] text-textgray">{sub}</div>
+      </div>
+      <ArrowRight size={14} className="text-textgray group-hover:translate-x-0.5 group-hover:text-primary" />
+    </Link>
+  );
+}

@@ -1,56 +1,132 @@
-import { Recycle, TrendingUp } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, MapPin, AlertCircle, CheckCircle2, X } from "lucide-react";
+import { Eyebrow } from "@/components/ui";
+import { CategoryIcon, Blob, GridOverlay } from "@/components/illustrations";
+import { formatNaira } from "@/lib/cn";
 
 const CATS = [
-  { name: "PET Plastic Bottles", price: 200, examples: "Water, soda, juice bottles", demand: "Very high" },
-  { name: "HDPE Plastic", price: 180, examples: "Detergent, milk, bleach jugs", demand: "High" },
-  { name: "Aluminium Cans", price: 600, examples: "Soft drink, beer cans", demand: "Very high" },
-  { name: "Tin / Steel Cans", price: 120, examples: "Food cans, evaporated milk tins", demand: "Medium" },
-  { name: "Cardboard", price: 60, examples: "Boxes, packaging, cartons", demand: "High" },
-  { name: "Mixed Paper", price: 50, examples: "Newspapers, magazines, office paper", demand: "Medium" },
-  { name: "Glass Bottles", price: 40, examples: "Beer, wine, spirit bottles", demand: "Medium" },
-  { name: "E-Waste — Small", price: 1200, examples: "Phones, chargers, cables, earphones", demand: "Very high" },
-  { name: "E-Waste — Large", price: 800, examples: "Laptops, monitors, printers", demand: "High" },
-  { name: "Used Cooking Oil", price: 300, examples: "Filtered restaurant or home oil", demand: "Medium" },
-  { name: "Textile Scrap", price: 80, examples: "Clean clothing, fabric offcuts", demand: "Low" },
-  { name: "Lead Batteries", price: 1500, examples: "Inverter, car batteries", demand: "Very high" },
+  { name: "PET Plastic", lagos: 200, abuja: 180, ph: 190, accept: ["Soft drink bottles", "Water sachets", "Juice bottles"], reject: ["Cooking oil bottles", "Caps still attached"], tip: "Crush bottles to fit more in your bag." },
+  { name: "HDPE Plastic", lagos: 240, abuja: 220, ph: 230, accept: ["Detergent bottles", "Milk jugs", "Bleach containers"], reject: ["Coloured film", "Mixed plastic"], tip: "Rinse heavily soiled containers before drop." },
+  { name: "Aluminium Cans", lagos: 600, abuja: 580, ph: 600, accept: ["Soft drink cans", "Beer cans", "Energy drink cans"], reject: ["Steel cans (use Metal)", "Aerosol cans"], tip: "Crushed cans = same money, half the bag space." },
+  { name: "Mixed Paper", lagos: 60, abuja: 55, ph: 60, accept: ["Office paper", "Newspapers", "Magazines"], reject: ["Wet paper", "Glossy promotional flyers"], tip: "Keep paper bone dry. Wet paper loses 70% value." },
+  { name: "Cardboard", lagos: 80, abuja: 75, ph: 80, accept: ["Boxes", "Cartons", "Packaging"], reject: ["Pizza boxes with grease", "Wax-coated"], tip: "Flatten boxes before drop — saves the agent time." },
+  { name: "Glass Bottles", lagos: 30, abuja: 28, ph: 30, accept: ["Beer bottles", "Wine bottles", "Spirit bottles"], reject: ["Broken glass", "Window glass", "Mirrors"], tip: "We pay by colour: clear > brown > green." },
+  { name: "E-Waste", lagos: 1200, abuja: 1100, ph: 1150, accept: ["Old phones", "Chargers", "Cables", "Headphones"], reject: ["TVs (special pickup)", "Refrigerators"], tip: "Phones with batteries = 2x value. Don't remove them." },
+  { name: "Metal & Scrap", lagos: 400, abuja: 380, ph: 400, accept: ["Iron rods", "Cooking pots", "Steel cans"], reject: ["Lead-acid batteries", "Anything painted heavily"], tip: "Magnet test — if it sticks, it's metal we accept." },
 ];
 
 export default function WasteCategories() {
   return (
-    <div className="container-page py-16">
-      <div className="mx-auto max-w-3xl text-center">
-        <span className="badge bg-mint text-primary">Pricing</span>
-        <h1 className="mt-4 font-display text-4xl font-extrabold sm:text-5xl">
-          What we pay, by the kilo.
-        </h1>
-        <p className="mt-4 text-textgray">
-          Prices are updated weekly based on factory demand. Submit verified, clean material to maximize your payout.
-        </p>
-      </div>
+    <>
+      <section className="relative overflow-hidden bg-cream pt-20 pb-16 sm:pt-28">
+        <div className="absolute inset-0 bg-grad-hero" />
+        <Blob className="left-[-10%] top-[-15%] h-[450px] w-[450px]" color="from-primary/30 to-primary/0" />
+        <GridOverlay />
+        <div className="container-page relative max-w-3xl">
+          <Eyebrow>Categories & live rates</Eyebrow>
+          <h1 className="mt-5 text-display-xl font-extrabold leading-[0.95] tracking-tighter text-balance">
+            Eight categories. <br />
+            <span className="text-accent-600">Live, regional pricing.</span>
+          </h1>
+          <p className="mt-6 text-lg text-textgray">
+            Rates are set by our pricing engine every Monday based on factory demand, exchange rates and local supply. Prices below are <span className="font-bold text-charcoal">live as of today.</span>
+          </p>
+        </div>
+      </section>
 
-      <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {CATS.map((c) => (
-          <div key={c.name} className="card transition-shadow hover:shadow-card">
-            <div className="flex items-center justify-between">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-mint text-primary">
-                <Recycle size={18} />
-              </div>
-              <span className="badge bg-accent/10 text-accent-500">
-                <TrendingUp size={12} /> {c.demand}
-              </span>
+      <section className="bg-white py-10">
+        <div className="container-page">
+          <div className="card flex flex-wrap items-center justify-between gap-4 p-4">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="badge-mint">● Live</span>
+              <span className="text-textgray">Showing rates for</span>
+              <select className="input h-9 w-auto px-3 text-sm font-bold">
+                <option>Lagos</option>
+                <option>Abuja</option>
+                <option>Port Harcourt</option>
+                <option>Kano</option>
+              </select>
             </div>
-            <h3 className="mt-3 font-display text-lg font-bold">{c.name}</h3>
-            <p className="mt-1 text-sm text-textgray">{c.examples}</p>
-            <div className="mt-4 flex items-end justify-between border-t border-bordergray pt-3">
-              <span className="text-xs uppercase tracking-wider text-textgray">Pays you</span>
-              <span className="font-mono text-2xl font-extrabold text-charcoal">
-                ₦{c.price.toLocaleString()}
-                <span className="text-sm font-normal text-textgray">/kg</span>
-              </span>
+            <div className="text-xs text-textgray">Last updated <span className="font-bold text-charcoal">Mon, Apr 27 · 06:00</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section bg-white !pt-0">
+        <div className="container-page">
+          <div className="grid gap-5 md:grid-cols-2">
+            {CATS.map((c) => (
+              <article key={c.name} className="card overflow-hidden">
+                <div className="flex items-center gap-4 border-b border-bordergray p-6">
+                  <CategoryIcon category={c.name} size={56} />
+                  <div className="flex-1">
+                    <h3 className="text-h4">{c.name}</h3>
+                    <div className="text-xs text-textgray">{c.tip}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-mono text-2xl font-extrabold text-charcoal">{formatNaira(c.lagos)}</div>
+                    <div className="text-[10px] font-bold uppercase text-textgray">/kg in Lagos</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 divide-x divide-bordergray">
+                  {[
+                    { city: "Lagos", v: c.lagos }, { city: "Abuja", v: c.abuja }, { city: "PH", v: c.ph },
+                  ].map((p) => (
+                    <div key={p.city} className="px-4 py-3 text-center">
+                      <div className="text-[10px] font-bold uppercase text-textgray">{p.city}</div>
+                      <div className="font-mono text-sm font-extrabold">{formatNaira(p.v)}</div>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-px bg-bordergray">
+                  <div className="bg-white p-5">
+                    <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-success">We accept</div>
+                    <ul className="space-y-1.5">
+                      {c.accept.map((a) => (
+                        <li key={a} className="flex items-center gap-2 text-sm">
+                          <CheckCircle2 size={14} className="shrink-0 text-success" /> {a}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="bg-white p-5">
+                    <div className="mb-3 text-[10px] font-bold uppercase tracking-widest text-error">We don't accept</div>
+                    <ul className="space-y-1.5">
+                      {c.reject.map((r) => (
+                        <li key={r} className="flex items-center gap-2 text-sm text-textgray">
+                          <X size={14} className="shrink-0 text-error" /> {r}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section bg-cream">
+        <div className="container-page">
+          <div className="card-primary relative overflow-hidden p-10 sm:p-14">
+            <div className="absolute inset-0 bg-grid-dark mask-fade-b opacity-30" />
+            <div className="relative grid gap-8 lg:grid-cols-12 lg:items-center">
+              <div className="lg:col-span-8">
+                <Eyebrow className="!text-accent">For high-volume collectors</Eyebrow>
+                <h2 className="mt-3 text-display font-extrabold leading-[0.98] text-white text-balance">
+                  Got more than 50kg? We'll send a truck.
+                </h2>
+                <p className="mt-5 max-w-xl text-white/80">
+                  Restaurants, schools, churches, market traders, factories — book a free Recovang Logistics pickup directly from the app. We weigh on your premises, pay on the spot.
+                </p>
+              </div>
+              <div className="lg:col-span-4 lg:text-right">
+                <Link to="/auth/register" className="btn-gold btn-lg">Book a pickup <ArrowRight size={16} /></Link>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
-    </div>
+        </div>
+      </section>
+    </>
   );
 }

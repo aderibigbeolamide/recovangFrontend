@@ -1,93 +1,112 @@
-import { useState } from "react";
-import { Crown, Flame, Trophy } from "lucide-react";
-import { PageHeader, Section } from "@/components/ui";
+import { Award, Crown, Flame, Medal, TrendingUp, Trophy } from "lucide-react";
+import { PageHeader, Avatar } from "@/components/ui";
 import { formatNaira } from "@/lib/cn";
+import { useState } from "react";
 
-const ROWS = [
-  { rank: 1, name: "Chioma O.", area: "Surulere · Lagos", weight: 412, earned: 248_000 },
-  { rank: 2, name: "Tunde S.", area: "Yaba · Lagos", weight: 398, earned: 234_000 },
-  { rank: 3, name: "Aisha B.", area: "Wuse · Abuja", weight: 372, earned: 221_000 },
-  { rank: 4, name: "You — Adaeze", area: "Surulere · Lagos", weight: 218, earned: 130_000 },
-  { rank: 5, name: "Emeka P.", area: "Trans-Amadi · PH", weight: 196, earned: 118_000 },
-  { rank: 6, name: "Halima K.", area: "Kano Metro", weight: 184, earned: 110_000 },
-  { rank: 7, name: "Femi R.", area: "Lekki · Lagos", weight: 172, earned: 103_000 },
+const TOP3 = [
+  { name: "Kunle Bakare", area: "Ikeja", kg: 412, n: 84210, avatar: "KB" },
+  { name: "Adaeze Nwosu (you)", area: "Surulere", kg: 218, n: 48750, avatar: "AN", you: true },
+  { name: "Folake Adeola", area: "Lekki", kg: 186, n: 41360, avatar: "FA" },
 ];
 
+const TABLE = [
+  { rank: 4, name: "Tunde Bello", area: "Yaba", kg: 178, n: 39400, streak: 21 },
+  { rank: 5, name: "Maryam Sani", area: "Ikoyi", kg: 162, n: 35820, streak: 18 },
+  { rank: 6, name: "Chinedu Okeke", area: "Ajah", kg: 154, n: 32100, streak: 14 },
+  { rank: 7, name: "Aisha Yusuf", area: "Apapa", kg: 142, n: 29800, streak: 24 },
+  { rank: 8, name: "Segun Olu", area: "Surulere", kg: 138, n: 28910, streak: 9 },
+  { rank: 9, name: "Joy Eze", area: "Ojota", kg: 124, n: 26400, streak: 12 },
+  { rank: 10, name: "Ibrahim Lawal", area: "Lekki", kg: 118, n: 24800, streak: 7 },
+  { rank: 11, name: "Ngozi Eze", area: "Maryland", kg: 112, n: 23800, streak: 11 },
+  { rank: 12, name: "Wale Aboderin", area: "Magodo", kg: 108, n: 22600, streak: 8 },
+];
+
+const RANGES = ["This week", "This month", "All time"];
+const SCOPES = ["Lagos", "Abuja", "PH", "All Nigeria"];
+
 export default function CollectorLeaderboard() {
-  const [scope, setScope] = useState<"area" | "national">("area");
+  const [range, setRange] = useState(RANGES[0]);
+  const [scope, setScope] = useState(SCOPES[0]);
   return (
     <>
       <PageHeader
-        title="Leaderboard"
-        subtitle="See how you stack up against your neighborhood and the rest of Nigeria."
-        action={
-          <div className="inline-flex rounded-xl border border-bordergray bg-white p-1">
-            {(["area", "national"] as const).map((s) => (
-              <button
-                key={s}
-                onClick={() => setScope(s)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${
-                  scope === s ? "bg-primary text-white" : "text-textgray"
-                }`}
-              >
-                {s === "area" ? "Neighborhood" : "National"}
-              </button>
-            ))}
-          </div>
-        }
+        eyebrow="Leaderboard"
+        title="Top recyclers in your area"
+        subtitle="Climb the ranks. Top 100 each month win cash bonuses, free data and Recovang merch."
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        {ROWS.slice(0, 3).map((r, i) => (
-          <div
-            key={r.name}
-            className={`card relative overflow-hidden ${i === 0 ? "bg-gradient-gold text-charcoal" : ""}`}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/30 font-display font-extrabold">
-                #{r.rank}
-              </div>
-              {i === 0 ? <Crown className="text-charcoal" /> : <Trophy className="text-primary" />}
-            </div>
-            <p className="mt-3 font-display text-lg font-bold">{r.name}</p>
-            <p className="text-xs opacity-70">{r.area}</p>
-            <div className="mt-3 flex items-center justify-between text-sm">
-              <span className="font-mono">{r.weight} kg</span>
-              <span className="font-mono font-bold">{formatNaira(r.earned)}</span>
-            </div>
-          </div>
-        ))}
+      {/* Filters */}
+      <div className="card mb-6 flex flex-wrap items-center gap-3 p-4">
+        <div className="flex items-center gap-1 rounded-full bg-cream p-1 text-xs font-bold">
+          {RANGES.map((r) => (
+            <button key={r} onClick={() => setRange(r)} className={`rounded-full px-3 py-1.5 ${range === r ? "bg-charcoal text-white" : "text-textgray"}`}>{r}</button>
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {SCOPES.map((s) => (
+            <button key={s} onClick={() => setScope(s)} className={`chip ${scope === s ? "chip-active" : ""}`}>{s}</button>
+          ))}
+        </div>
       </div>
 
-      <Section>
-        <div className="overflow-x-auto rounded-xl border border-bordergray">
-          <table className="min-w-full text-sm">
-            <thead className="bg-offwhite text-left text-xs uppercase text-textgray">
-              <tr>
-                <th className="px-4 py-3">Rank</th>
-                <th className="px-4 py-3">Collector</th>
-                <th className="px-4 py-3">Area</th>
-                <th className="px-4 py-3 text-right">Kg recovered</th>
-                <th className="px-4 py-3 text-right">Earned</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-bordergray bg-white">
-              {ROWS.map((r) => (
-                <tr key={r.rank} className={r.name.startsWith("You") ? "bg-mint" : "hover:bg-mint/40"}>
-                  <td className="px-4 py-3 font-mono">#{r.rank}</td>
-                  <td className="px-4 py-3 font-semibold">
-                    {r.name.startsWith("You") && <Flame size={14} className="mr-1 inline text-accent" />}
-                    {r.name}
-                  </td>
-                  <td className="px-4 py-3 text-textgray">{r.area}</td>
-                  <td className="px-4 py-3 text-right font-mono">{r.weight} kg</td>
-                  <td className="px-4 py-3 text-right font-mono font-semibold">{formatNaira(r.earned)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Podium */}
+      <div className="card relative overflow-hidden p-8">
+        <div className="absolute inset-0 bg-grad-mint opacity-50" />
+        <div className="relative grid items-end gap-4 sm:grid-cols-3">
+          {/* Reorder for podium look: 2nd, 1st, 3rd */}
+          {[
+            { ...TOP3[1], rank: 2, h: 160, color: "bg-charcoal/8 text-charcoal", trophy: <Medal size={20} className="text-charcoal/60" /> },
+            { ...TOP3[0], rank: 1, h: 200, color: "bg-grad-gold text-charcoal", trophy: <Crown size={22} className="text-charcoal" /> },
+            { ...TOP3[2], rank: 3, h: 140, color: "bg-orange-100 text-orange-700", trophy: <Medal size={20} className="text-orange-600" /> },
+          ].map((p) => (
+            <div key={p.rank} className="flex flex-col items-center text-center">
+              <div className="relative mb-3">
+                <Avatar name={p.name.replace(" (you)", "")} size={68} />
+                <div className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-white shadow-soft">{p.trophy}</div>
+              </div>
+              <div className="font-extrabold text-charcoal">{p.name}</div>
+              <div className="text-xs text-textgray">{p.area}</div>
+              <div className="mt-2 flex items-center gap-3 text-xs text-textgray">
+                <span className="font-mono font-extrabold text-charcoal">{p.kg} kg</span>
+                <span>·</span>
+                <span className="money">{formatNaira(p.n)}</span>
+              </div>
+              <div className={`mt-3 grid w-full place-items-end rounded-t-2xl px-4 pb-3 pt-4 font-display text-3xl font-extrabold ${p.color}`} style={{ height: p.h }}>
+                #{p.rank}
+              </div>
+            </div>
+          ))}
         </div>
-      </Section>
+      </div>
+
+      <div className="mt-6 card overflow-hidden">
+        <table className="tbl">
+          <thead>
+            <tr><th className="w-16">Rank</th><th>Collector</th><th>Area</th><th>Recovered</th><th>Earned</th><th>Streak</th></tr>
+          </thead>
+          <tbody>
+            {TABLE.map((r) => (
+              <tr key={r.rank}>
+                <td><span className="font-mono text-sm font-extrabold text-charcoal/70">#{r.rank}</span></td>
+                <td>
+                  <div className="flex items-center gap-3">
+                    <Avatar name={r.name} size={32} />
+                    <span className="font-bold">{r.name}</span>
+                  </div>
+                </td>
+                <td className="text-textgray">{r.area}</td>
+                <td className="font-mono">{r.kg} kg</td>
+                <td><span className="money">{formatNaira(r.n)}</span></td>
+                <td>
+                  <span className="badge bg-error-50 text-error inline-flex items-center gap-1">
+                    <Flame size={11} /> {r.streak} d
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }
