@@ -1,114 +1,136 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import PublicLayout from "./components/PublicLayout";
-import Home from "./pages/public/Home";
-import About from "./pages/public/About";
-import HowItWorks from "./pages/public/HowItWorks";
-import WasteCategories from "./pages/public/WasteCategories";
-import FindHub from "./pages/public/FindHub";
-import Contact from "./pages/public/Contact";
-import FAQ from "./pages/public/FAQ";
-import Blog from "./pages/public/Blog";
-import Legal from "./pages/public/Legal";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useAuth } from './store/auth.store';
+import { useOfflineSync } from './lib/useOfflineSync';
 
-import CollectorLayout from "./pages/collector/CollectorLayout";
-import CollectorDashboard from "./pages/collector/Dashboard";
-import CollectorSubmit from "./pages/collector/Submit";
-import CollectorHistory from "./pages/collector/History";
-import CollectorWithdraw from "./pages/collector/Withdraw";
-import CollectorLeaderboard from "./pages/collector/Leaderboard";
-import CollectorBadges from "./pages/collector/Badges";
-import CollectorReferrals from "./pages/collector/Referrals";
-import CollectorStreaks from "./pages/collector/Streaks";
-import CollectorDisputes from "./pages/collector/Disputes";
-import CollectorNotifications from "./pages/collector/Notifications";
+// Layouts
+import DashboardLayout from './components/layout/DashboardLayout';
+import { Toaster } from 'react-hot-toast';
+import OfflineBanner from './components/ui/OfflineBanner';
 
-import AgentLayout from "./pages/agent/AgentLayout";
-import AgentDashboard from "./pages/agent/Dashboard";
-import AgentVerify from "./pages/agent/Verify";
-import AgentHub from "./pages/agent/Hub";
-import AgentReports from "./pages/agent/Reports";
-import AgentXp from "./pages/agent/XpEarnings";
-import AgentLocation from "./pages/agent/Location";
+// Pages - Public
+import LandingPage from './pages/public/LandingPage';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 
-import LogisticsLayout from "./pages/logistics/LogisticsLayout";
-import LogisticsDashboard from "./pages/logistics/Dashboard";
-import LogisticsPickups from "./pages/logistics/Pickups";
-import LogisticsFleet from "./pages/logistics/Fleet";
-import LogisticsProfile from "./pages/logistics/Profile";
+// Pages - Collector
+import CollectorDashboard from './pages/collector/Dashboard';
+import HistoryPage from './pages/collector/HistoryPage';
+import WalletPage from './pages/wallet/WalletPage';
+import HubFinder from './pages/dashboard/HubFinder';
 
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/Dashboard";
-import AdminManagement from "./pages/admin/Management";
-import AdminLogistics from "./pages/admin/Logistics";
-import AdminFraud from "./pages/admin/Fraud";
-import AdminAuditLogs from "./pages/admin/AuditLogs";
+// Dashboards
+import AgentDashboard from './pages/agent/Dashboard';
+import BrandDashboard from './pages/brand/Dashboard';
+import AdminDashboard from './pages/admin/Dashboard';
+import LogisticsDashboard from './pages/logistics/Dashboard';
+import FactoryDashboard from './pages/factory/Dashboard';
 
-export default function App() {
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode, roles?: string[] }> = ({ children, roles }) => {
+  const { token, user } = useAuth();
+  if (!token) return <Navigate to="/login" replace />;
+  
+  if (roles && user && user.role) {
+    const normalizedUserRole = user.role.toLowerCase().replace('_', '');
+    const isAuthorized = roles.some(role => role.toLowerCase().replace('_', '') === normalizedUserRole);
+    if (!isAuthorized) return <Navigate to="/" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+function App() {
+  useOfflineSync();
+
   return (
-    <Routes>
-      {/* Public */}
-      <Route element={<PublicLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/how-it-works" element={<HowItWorks />} />
-        <Route path="/waste-categories" element={<WasteCategories />} />
-        <Route path="/find-hub" element={<FindHub />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/faq" element={<FAQ />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/terms" element={<Legal kind="terms" />} />
-        <Route path="/privacy" element={<Legal kind="privacy" />} />
-      </Route>
+    <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" />
+      <OfflineBanner />
+      <BrowserRouter>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/about" element={<div className="p-20 text-h1">About Recovang</div>} />
+          <Route path="/how-it-works" element={<div className="p-20 text-h1">How it Works</div>} />
+          <Route path="/find-hub" element={<HubFinder />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          
+          {/* Collector Routes */}
+          <Route path="/collector" element={<ProtectedRoute roles={['collector']}><DashboardLayout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/collector/dashboard" replace />} />
+            <Route path="dashboard" element={<CollectorDashboard />} />
+            <Route path="wallet" element={<WalletPage />} />
+            <Route path="withdraw" element={<WalletPage />} />
+            <Route path="hubs" element={<HubFinder />} />
+            <Route path="history" element={<HistoryPage />} />
+            <Route path="leaderboard" element={<div className="p-8">Leaderboard</div>} />
+            <Route path="profile" element={<div className="p-8">Profile Settings</div>} />
+          </Route>
 
-      {/* Auth */}
-      <Route path="/auth/login" element={<Login />} />
-      <Route path="/auth/register" element={<Register />} />
-      <Route path="/auth/forgot" element={<Login />} />
+          {/* Agent Routes */}
+          <Route path="/agent" element={<ProtectedRoute roles={['agent']}><DashboardLayout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/agent/dashboard" replace />} />
+            <Route path="dashboard" element={<AgentDashboard />} />
+            <Route path="verify" element={<div className="p-8">Verify Submission</div>} />
+            <Route path="profile" element={<div className="p-8">Agent Profile</div>} />
+          </Route>
 
-      {/* Collector */}
-      <Route element={<CollectorLayout />}>
-        <Route path="/collector/dashboard" element={<CollectorDashboard />} />
-        <Route path="/collector/submit" element={<CollectorSubmit />} />
-        <Route path="/collector/history" element={<CollectorHistory />} />
-        <Route path="/collector/withdraw" element={<CollectorWithdraw />} />
-        <Route path="/collector/leaderboard" element={<CollectorLeaderboard />} />
-        <Route path="/collector/badges" element={<CollectorBadges />} />
-        <Route path="/collector/referrals" element={<CollectorReferrals />} />
-        <Route path="/collector/streaks" element={<CollectorStreaks />} />
-        <Route path="/collector/disputes" element={<CollectorDisputes />} />
-        <Route path="/collector/notifications" element={<CollectorNotifications />} />
-      </Route>
+          {/* Admin Routes */}
+          <Route path="/admin" element={<ProtectedRoute roles={['admin', 'superadmin']}><DashboardLayout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="collectors" element={<div className="p-8">Manage Collectors</div>} />
+            <Route path="hubs" element={<div className="p-8">Manage Hubs</div>} />
+            <Route path="pricing" element={<div className="p-8">Pricing Control</div>} />
+            <Route path="settings" element={<div className="p-8">Platform Settings</div>} />
+          </Route>
 
-      {/* Agent */}
-      <Route element={<AgentLayout />}>
-        <Route path="/agent/dashboard" element={<AgentDashboard />} />
-        <Route path="/agent/verify" element={<AgentVerify />} />
-        <Route path="/agent/hub" element={<AgentHub />} />
-        <Route path="/agent/reports" element={<AgentReports />} />
-        <Route path="/agent/xp-earnings" element={<AgentXp />} />
-        <Route path="/agent/location" element={<AgentLocation />} />
-      </Route>
+          <Route path="/superadmin" element={<ProtectedRoute roles={['admin', 'superadmin']}><DashboardLayout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/superadmin/dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="collectors" element={<div className="p-8">Manage Collectors</div>} />
+            <Route path="hubs" element={<div className="p-8">Manage Hubs</div>} />
+            <Route path="pricing" element={<div className="p-8">Pricing Control</div>} />
+            <Route path="settings" element={<div className="p-8">Platform Settings</div>} />
+          </Route>
 
-      {/* Logistics */}
-      <Route element={<LogisticsLayout />}>
-        <Route path="/logistics/dashboard" element={<LogisticsDashboard />} />
-        <Route path="/logistics/pickups" element={<LogisticsPickups />} />
-        <Route path="/logistics/fleet" element={<LogisticsFleet />} />
-        <Route path="/logistics/profile" element={<LogisticsProfile />} />
-      </Route>
+          {/* Brand Routes */}
+          <Route path="/brand" element={<ProtectedRoute roles={['brand']}><DashboardLayout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/brand/dashboard" replace />} />
+            <Route path="dashboard" element={<BrandDashboard />} />
+            <Route path="compliance" element={<div className="p-8">Compliance Reports</div>} />
+          </Route>
 
-      {/* Admin */}
-      <Route element={<AdminLayout />}>
-        <Route path="/admin/dashboard" element={<AdminDashboard />} />
-        <Route path="/admin/management" element={<AdminManagement />} />
-        <Route path="/admin/logistics" element={<AdminLogistics />} />
-        <Route path="/admin/fraud" element={<AdminFraud />} />
-        <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
-      </Route>
+          {/* Factory Routes */}
+          <Route path="/factory" element={<ProtectedRoute roles={['factory']}><DashboardLayout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/factory/dashboard" replace />} />
+            <Route path="dashboard" element={<FactoryDashboard />} />
+            <Route path="supply" element={<div className="p-8">Supply Overview</div>} />
+          </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          {/* Logistics Routes */}
+          <Route path="/logistics" element={<ProtectedRoute roles={['logistics']}><DashboardLayout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/logistics/dashboard" replace />} />
+            <Route path="dashboard" element={<LogisticsDashboard />} />
+          </Route>
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
+
+export default App;

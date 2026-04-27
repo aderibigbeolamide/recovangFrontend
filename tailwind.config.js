@@ -5,56 +5,49 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: "#1A6B3C",
-          50: "#E6F4EC",
-          100: "#C8E6D5",
-          200: "#9CD1B0",
-          300: "#6FBC8B",
-          400: "#43A766",
-          500: "#1A6B3C",
-          600: "#155A32",
-          700: "#114829",
-          800: "#0C361F",
-          900: "#082516",
+          DEFAULT: "#1A6B3C", // Primary Green
         },
         accent: {
-          DEFAULT: "#D4A017",
-          50: "#FBF3DB",
-          100: "#F7E7B7",
-          200: "#F0CF6F",
-          300: "#E8B72E",
-          400: "#D4A017",
-          500: "#B58812",
-          600: "#8F6B0E",
-          700: "#695009",
-          800: "#443405",
-          900: "#1F1802",
+          DEFAULT: "#D4A017", // Accent Gold
         },
         charcoal: {
-          DEFAULT: "#1C1C2E",
-          50: "#F8FAF9",
-          100: "#E1E3EA",
-          200: "#C3C7D5",
-          300: "#A4ABBF",
-          400: "#7A8197",
-          500: "#5A6473",
-          600: "#3F4655",
-          700: "#2C3140",
-          800: "#1C1C2E",
-          900: "#0E0E1A",
+          DEFAULT: "#1C1C2E", // Dark Charcoal
         },
-        mint: "#E6F4EC",
-        offwhite: "#F8FAF9",
-        success: "#27AE60",
-        error: "#E74C3C",
-        warning: "#F39C12",
-        textgray: "#5A6473",
-        bordergray: "#DDE3E9",
+        mint: {
+          DEFAULT: "#E6F4EC", // Light Mint
+        },
+        offwhite: {
+          DEFAULT: "#F8FAF9", // Off White
+        },
+        success: {
+          DEFAULT: "#27AE60", // Success Green
+        },
+        error: {
+          DEFAULT: "#E74C3C", // Error Red
+        },
+        warning: {
+          DEFAULT: "#F39C12", // Warning Amber
+        },
+        textgray: {
+          DEFAULT: "#5A6473", // Text Gray
+        },
+        bordergray: {
+          DEFAULT: "#DDE3E9", // Border Gray
+        }
       },
       fontFamily: {
-        display: ['"Plus Jakarta Sans"', "system-ui", "sans-serif"],
-        sans: ["Lato", "system-ui", "sans-serif"],
-        mono: ['"JetBrains Mono"', "ui-monospace", "monospace"],
+        heading: ['"Plus Jakarta Sans"', "sans-serif"],
+        sans: ["Lato", "sans-serif"],
+        mono: ['"JetBrains Mono"', "monospace"],
+      },
+      fontSize: {
+        'display': ['48px', { lineHeight: '1.2', letterSpacing: '-0.02em', fontWeight: '800' }],
+        'h1': ['32px', { lineHeight: '1.2', fontWeight: '700' }],
+        'h2': ['28px', { lineHeight: '1.3', fontWeight: '700' }],
+        'h3': ['24px', { lineHeight: '1.3', fontWeight: '700' }],
+        'body': ['16px', { lineHeight: '1.5' }],
+        'small': ['14px', { lineHeight: '1.5' }],
+        'ui': ['12px', { lineHeight: '1.4', fontWeight: '600' }],
       },
       boxShadow: {
         soft: "0 2px 8px rgba(28,28,46,0.06)",
@@ -63,9 +56,9 @@ export default {
         gold: "0 8px 32px rgba(212,160,23,0.25)",
       },
       backgroundImage: {
-        "gradient-primary": "linear-gradient(135deg, #1A6B3C 0%, #114829 100%)",
-        "gradient-gold": "linear-gradient(135deg, #D4A017 0%, #8F6B0E 100%)",
-        "gradient-dark": "linear-gradient(135deg, #1C1C2E 0%, #0E0E1A 100%)",
+        "gradient-primary": "linear-gradient(135deg, #1A6B3C 0%, #124D2B 100%)",
+        "gradient-gold": "linear-gradient(135deg, #D4A017 0%, #A67D12 100%)",
+        "gradient-dark": "linear-gradient(135deg, #1C1C2E 0%, #12121F 100%)",
       },
     },
   },
