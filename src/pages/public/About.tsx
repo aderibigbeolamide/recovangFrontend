@@ -35,7 +35,7 @@ export default function About() {
         <div className="container-page relative">
           <Eyebrow>Our story</Eyebrow>
           <h1 className="mt-5 max-w-4xl text-display-xl font-extrabold leading-[0.95] tracking-tighter text-balance">
-            We're building the Nigerian recycling industry — <span className="text-primary">one bottle at a time.</span>
+            We're building Africa's recycling industry — <span className="text-primary">one bottle at a time, starting in Nigeria.</span>
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-textgray">
             Every year, Lagos alone throws away enough plastic to fill the National Stadium 18 times. Recovang exists to flip that — to make every kilo of waste a kilo of cash, and every street a cleaner street.
@@ -48,7 +48,7 @@ export default function About() {
           <div className="lg:col-span-6">
             <Eyebrow>Mission</Eyebrow>
             <h2 className="mt-3 text-h1 font-extrabold leading-tight text-balance">
-              Make recovering waste the most profitable thing a Nigerian household can do.
+              Make recovering waste the most profitable thing an African household can do.
             </h2>
             <p className="mt-5 text-textgray">
               Nigeria generates 32 million tonnes of solid waste a year. Less than 12% is recovered. The other 88% becomes flooded gutters, choked drains and Lagos lagoon plastic islands. We're not waiting for government, NGOs or carbon markets to fix it. We're paying real cash, today, to the people who can.

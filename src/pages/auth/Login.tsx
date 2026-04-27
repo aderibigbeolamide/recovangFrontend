@@ -2,13 +2,15 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, type ReactNode } from "react";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { Blob, GridOverlay } from "@/components/illustrations";
+import { Blob } from "@/components/illustrations";
 import { DEMO_USERS, useAuth, type UserRole } from "@/store/auth";
 
 const ROLES: { v: UserRole; t: string; d: string }[] = [
   { v: "collector", t: "Collector", d: "Drop waste, get paid" },
   { v: "agent", t: "Agent", d: "Verify drops at a hub" },
   { v: "logistics", t: "Logistics", d: "Move material with your fleet" },
+  { v: "brand", t: "Brand", d: "Track EPR compliance" },
+  { v: "factory", t: "Factory", d: "Buy processed raw material" },
   { v: "admin", t: "Admin", d: "Operate the platform" },
 ];
 
@@ -31,7 +33,7 @@ export default function Login() {
 
       <div className="mt-6">
         <div className="label">Sign in as</div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {ROLES.map((r) => (
             <button
               key={r.v}
@@ -123,20 +125,27 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
         {/* Right side — visual */}
         <div className="relative hidden overflow-hidden bg-grad-primary-deep text-white lg:block">
-          <div className="absolute inset-0 bg-grid-dark mask-fade-b opacity-30" />
+          <img
+            src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=1400&q=70"
+            alt="A young African woman smiling while using the Recovang app on her phone"
+            className="absolute inset-0 h-full w-full object-cover opacity-55"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-tr from-charcoal/85 via-charcoal/55 to-primary/40" />
           <Blob className="left-[-10%] top-[-10%] h-[400px] w-[400px]" color="from-accent/30 to-accent/0" />
           <Blob className="right-[-15%] bottom-[-15%] h-[400px] w-[400px]" color="from-primary/40 to-primary/0" />
+
           <div className="relative flex h-full flex-col justify-between p-12">
             <div>
               <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-accent">
-                <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Live across Nigeria
+                <span className="h-1.5 w-1.5 rounded-full bg-accent" /> Live across Africa · starting in Nigeria
               </span>
               <h2 className="mt-8 text-display font-extrabold leading-[0.98] text-balance">
                 Recover. <br /> Earn. <br />
                 <span className="text-accent">Sustain.</span>
               </h2>
               <p className="mt-6 max-w-sm text-white/80">
-                62,418 Nigerians earn weekly from waste they used to throw away. Join them.
+                62,418 Africans earn weekly from waste they used to throw away. Pan-African mission, Nigerian first.
               </p>
             </div>
 

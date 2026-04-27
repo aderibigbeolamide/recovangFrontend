@@ -64,7 +64,7 @@ function Hero() {
       <div className="container-page relative grid gap-14 pb-24 pt-12 lg:grid-cols-12 lg:gap-10 lg:pb-32 lg:pt-20">
         <div className="lg:col-span-7">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Eyebrow>Nigeria's #1 waste-to-cash platform</Eyebrow>
+            <Eyebrow>Africa's waste-to-cash platform · starting in Nigeria</Eyebrow>
           </motion.div>
           <motion.h1
             initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
@@ -137,7 +137,7 @@ function Partners() {
     <section className="bg-cream py-12">
       <div className="container-page">
         <div className="text-center text-[11px] font-bold uppercase tracking-widest text-textgray">
-          Trusted by Nigeria's biggest brands & government partners
+          Trusted by Africa's biggest brands & government partners
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4 opacity-70">
           {PARTNERS.map((p) => (
@@ -169,7 +169,7 @@ function ImpactStats() {
           <div className="grid gap-4 sm:grid-cols-2 lg:col-span-7">
             {[
               { v: "1.2M kg", l: "Plastic, paper, glass, metal recovered", t: "+18,400 kg this week", icon: Recycle },
-              { v: "₦284M", l: "Paid out to Nigerian collectors", t: "+₦12.8M this week", icon: Wallet },
+              { v: "₦284M", l: "Paid out to African collectors", t: "+₦12.8M this week", icon: Wallet },
               { v: "62,418", l: "Active collectors earning monthly", t: "+1,284 this week", icon: Users },
               { v: "412", l: "Recovang hubs across 9 cities", t: "+9 verified this month", icon: MapPin },
             ].map((k, i) => (
@@ -319,7 +319,7 @@ function Testimonials() {
       <div className="container-page">
         <div className="mb-12 max-w-2xl">
           <Eyebrow>From the streets</Eyebrow>
-          <h2 className="mt-3 text-h1 font-extrabold text-balance">Real Nigerians. Real cash. Real cleaner streets.</h2>
+          <h2 className="mt-3 text-h1 font-extrabold text-balance">Real Africans. Real cash. Real cleaner streets.</h2>
         </div>
         <div className="grid gap-5 md:grid-cols-3">
           {TESTIMONIALS.map((t, i) => (
@@ -364,7 +364,7 @@ function BrandCTA() {
             Hit your EPR targets — with photos, weights and signatures to prove it.
           </h2>
           <p className="mt-5 max-w-xl text-white/70">
-            Recovang is the first Nigerian platform that gives FMCG brands a transparent, real-time ledger of every kilogram recovered against their post-consumer waste obligations. No more spreadsheets, no more guesswork.
+            Recovang is Africa's first transparent, real-time ledger that gives FMCG brands proof of every kilogram recovered against their post-consumer waste obligations. Born in Nigeria, now scaling across the continent.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to="/contact" className="btn-gold">Talk to brand partnerships <ArrowRight size={16} /></Link>

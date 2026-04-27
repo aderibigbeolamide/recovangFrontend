@@ -1,13 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { ArrowRight, Check, ChevronRight, Mail, Phone, Shield, User, Wallet } from "lucide-react";
+import { ArrowRight, Building2, Check, ChevronRight, Factory, Mail, Phone, Truck, User, Wallet } from "lucide-react";
 import { AuthShell } from "./Login";
 import { DEMO_USERS, useAuth, type UserRole } from "@/store/auth";
 
-const ROLES: { v: UserRole; t: string; d: string }[] = [
-  { v: "collector", t: "I collect waste", d: "Drop bottles, cans, paper. Earn cash." },
-  { v: "agent", t: "I want to run a hub", d: "Verify drops, manage hub, earn commission." },
-  { v: "logistics", t: "I have vehicles", d: "Move material between hubs and recyclers." },
+const ROLES: { v: UserRole; t: string; d: string; icon: any }[] = [
+  { v: "collector", t: "I collect waste", d: "Drop bottles, cans, paper. Earn cash.", icon: Wallet },
+  { v: "agent", t: "I want to run a hub", d: "Verify drops, manage hub, earn commission.", icon: User },
+  { v: "logistics", t: "I have vehicles", d: "Move material between hubs and recyclers.", icon: Truck },
+  { v: "brand", t: "I represent a brand", d: "Track EPR compliance & sustainability.", icon: Building2 },
+  { v: "factory", t: "I run a recycling plant", d: "Buy processed raw material from hubs.", icon: Factory },
 ];
 
 export default function Register() {
@@ -95,7 +97,7 @@ export default function Register() {
                 }`}
               >
                 <div className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ${role === r.v ? "bg-grad-primary text-white" : "bg-cream text-charcoal/70"}`}>
-                  {r.v === "collector" ? <Wallet size={18} /> : r.v === "agent" ? <User size={18} /> : <Shield size={18} />}
+                  <r.icon size={18} />
                 </div>
                 <div className="flex-1">
                   <div className="text-base font-extrabold">{r.t}</div>

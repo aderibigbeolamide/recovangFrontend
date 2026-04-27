@@ -26,7 +26,7 @@ export default function Contact() {
         <div className="container-page relative max-w-3xl">
           <Eyebrow>Get in touch</Eyebrow>
           <h1 className="mt-5 text-display-xl font-extrabold leading-[0.95] tracking-tighter text-balance">
-            Real Nigerians on the other side. <br />
+            Real Africans on the other side. <br />
             <span className="text-primary">Average reply: 47 minutes.</span>
           </h1>
           <p className="mt-6 text-lg text-textgray">

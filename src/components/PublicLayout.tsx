@@ -142,7 +142,7 @@ function Footer() {
               Your <span className="text-accent">rubbish</span> is somebody's <span className="text-accent">raw material.</span>
             </h2>
             <p className="mt-4 max-w-xl text-base text-white/70">
-              Join 62,000 Nigerians cashing out every drop. Bank, airtime, bills — paid in seconds.
+              Join 62,000 Africans cashing out every drop. Bank, airtime, bills — paid in seconds.
             </p>
           </div>
           <div className="lg:col-span-5 lg:flex lg:items-end lg:justify-end">
@@ -159,7 +159,7 @@ function Footer() {
           <div className="lg:col-span-4">
             <Logo variant="white" />
             <p className="mt-4 max-w-sm text-sm text-white/70">
-              Recover. Earn. Sustain. Recovang turns waste into instant naira across Nigeria — built for low-end phones, weak networks, and real Nigerian neighborhoods.
+              Recover. Earn. Sustain. Recovang turns waste into instant cash across Africa — built for low-end phones, weak networks, and real African neighborhoods. Born and built in Nigeria.
             </p>
             <div className="mt-6 space-y-2 text-sm text-white/70">
               <div className="flex items-center gap-2"><MapPin size={14} className="text-accent" /> 12 Adeola Odeku, Victoria Island, Lagos</div>

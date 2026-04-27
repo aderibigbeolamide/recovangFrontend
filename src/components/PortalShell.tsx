@@ -2,9 +2,11 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import { useState, type ReactNode } from "react";
 import { Logo, LogoMark } from "./Logo";
 import { cn } from "@/lib/cn";
-import { Bell, ChevronRight, LogOut, Menu, Search, X } from "lucide-react";
+import { ChevronRight, LogOut, Menu, Search, Settings, X } from "lucide-react";
 import { useAuth } from "@/store/auth";
 import { Avatar } from "./ui";
+import { NotificationDropdown } from "./NotificationDropdown";
+import { AvatarMenu } from "./AvatarMenu";
 
 export interface NavItem {
   to: string;
@@ -17,30 +19,31 @@ interface PortalShellProps {
   brand: string;
   brandTone?: "primary" | "gold" | "dark";
   nav: NavItem[];
-  notifications?: number;
+  portalBase: string;
 }
 
-export default function PortalShell({ brand, nav, brandTone = "primary", notifications = 3 }: PortalShellProps) {
+export default function PortalShell({ brand, nav, brandTone = "primary", portalBase }: PortalShellProps) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut } = useAuth();
   const active = nav.find((n) => location.pathname.startsWith(n.to));
   const crumb = active?.label ?? "Dashboard";
 
   return (
     <div className="min-h-screen bg-cream">
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-bordergray bg-white/95 px-4 backdrop-blur lg:hidden">
-        <button onClick={() => setOpen(true)} aria-label="Open menu"><Menu size={20} /></button>
-        <Link to="/" className="flex items-center"><LogoMark size={26} /></Link>
-        <button aria-label="Notifications" className="relative">
-          <Bell size={18} />
-          <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-accent" />
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-2 border-b border-bordergray bg-white/95 px-3 backdrop-blur lg:hidden">
+        <button onClick={() => setOpen(true)} aria-label="Open menu" className="grid h-9 w-9 place-items-center rounded-lg border border-bordergray">
+          <Menu size={18} />
         </button>
+        <Link to="/" className="flex items-center"><LogoMark size={26} /></Link>
+        <div className="flex items-center gap-2">
+          <NotificationDropdown size="sm" />
+          <AvatarMenu portalBase={portalBase} compact />
+        </div>
       </header>
 
       <div className="flex">
-        <Sidebar brand={brand} brandTone={brandTone} nav={nav} notifications={notifications} />
+        <Sidebar brand={brand} brandTone={brandTone} nav={nav} portalBase={portalBase} />
 
         {/* Mobile drawer */}
         {open && (
@@ -51,7 +54,7 @@ export default function PortalShell({ brand, nav, brandTone = "primary", notific
                 <Logo variant="white" />
                 <button onClick={() => setOpen(false)} aria-label="Close" className="text-white/70 hover:text-white"><X /></button>
               </div>
-              <SidebarContent brand={brand} nav={nav} notifications={notifications} onNav={() => setOpen(false)} />
+              <SidebarContent brand={brand} nav={nav} portalBase={portalBase} onNav={() => setOpen(false)} />
             </div>
           </div>
         )}
@@ -69,18 +72,12 @@ export default function PortalShell({ brand, nav, brandTone = "primary", notific
                 <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
                 <input className="input h-10 pl-10 text-sm" placeholder="Search submissions, hubs, users…" />
               </div>
-              <button className="relative grid h-10 w-10 place-items-center rounded-xl border border-bordergray bg-white hover:border-charcoal/30">
-                <Bell size={16} />
-                {notifications > 0 && (
-                  <span className="absolute -right-1 -top-1 grid h-4 min-w-[16px] place-items-center rounded-full bg-accent px-1 text-[9px] font-bold text-charcoal">
-                    {notifications}
-                  </span>
-                )}
-              </button>
+              <NotificationDropdown />
+              <AvatarMenu portalBase={portalBase} />
             </div>
           </div>
 
-          <main className="p-5 sm:p-8">
+          <main className="p-4 sm:p-6 lg:p-8">
             <Outlet />
           </main>
         </div>
@@ -89,7 +86,7 @@ export default function PortalShell({ brand, nav, brandTone = "primary", notific
   );
 }
 
-function Sidebar(props: { brand: string; brandTone: "primary" | "gold" | "dark"; nav: NavItem[]; notifications: number }) {
+function Sidebar(props: { brand: string; brandTone: "primary" | "gold" | "dark"; nav: NavItem[]; portalBase: string }) {
   return (
     <aside className="fixed bottom-0 left-0 top-0 z-30 hidden w-[260px] flex-col bg-charcoal text-white lg:flex">
       <div className="flex h-16 items-center px-5">
@@ -100,7 +97,7 @@ function Sidebar(props: { brand: string; brandTone: "primary" | "gold" | "dark";
   );
 }
 
-function SidebarContent({ brand, nav, onNav }: { brand: string; nav: NavItem[]; notifications?: number; onNav?: () => void }) {
+function SidebarContent({ brand, nav, portalBase, onNav }: { brand: string; nav: NavItem[]; portalBase: string; onNav?: () => void }) {
   const { user, signOut } = useAuth();
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col px-3">
@@ -127,13 +124,23 @@ function SidebarContent({ brand, nav, onNav }: { brand: string; nav: NavItem[]; 
             )}
           </NavLink>
         ))}
+        <NavLink
+          to={`${portalBase}/settings`}
+          onClick={onNav}
+          className={({ isActive }) => cn("sb-item", isActive && "sb-item-active")}
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/5 group-[.sb-item-active]:bg-accent group-[.sb-item-active]:text-charcoal">
+            <Settings size={15} />
+          </span>
+          <span className="flex-1">Settings</span>
+        </NavLink>
       </nav>
       <div className="border-t border-white/10 px-1 py-3">
         <div className="flex items-center gap-3 rounded-2xl bg-white/5 p-2.5">
           <Avatar letters={user?.avatarLetters ?? "GU"} tone="gold" size={36} />
           <div className="flex-1 min-w-0">
             <div className="truncate text-sm font-bold text-white">{user?.name ?? "Guest"}</div>
-            <div className="truncate text-[11px] text-white/60">{user?.hub ?? user?.city ?? user?.email}</div>
+            <div className="truncate text-[11px] text-white/60">{user?.hub ?? user?.company ?? user?.city ?? user?.email}</div>
           </div>
           <button onClick={() => { signOut(); window.location.href = "/"; }} aria-label="Sign out" className="text-white/60 hover:text-accent">
             <LogOut size={16} />
