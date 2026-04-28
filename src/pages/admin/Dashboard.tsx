@@ -4,6 +4,10 @@ import { Avatar, KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { AreaChart, BarChart, Donut, ProgressRing } from "@/components/charts";
 import { formatNaira } from "@/lib/cn";
 
+import { useAdminDashboard, useAdminAnalytics } from "@/hooks/useAdmin";
+import { formatKg, formatNumber } from "@/lib/cn";
+import { useAuth } from "@/store/auth";
+
 const ALERTS = [
   { type: "fraud", text: "9 flagged drops awaiting review at Lekki Hub", priority: "high" },
   { type: "logistics", text: "Hub LG-IK402 truck service overdue", priority: "high" },
@@ -11,20 +15,47 @@ const ALERTS = [
   { type: "ops", text: "Pricing engine refresh scheduled for Monday 6am", priority: "low" },
 ];
 
-const REVENUE = [
-  { label: "W1", value: 1200000 }, { label: "W2", value: 1480000 },
-  { label: "W3", value: 1620000 }, { label: "W4", value: 1840000 },
-];
-
-const CITIES = [
-  { name: "Lagos", drops: 18420, kg: 64280, rev: 14820000 },
-  { name: "Abuja", drops: 6840, kg: 22480, rev: 5240000 },
-  { name: "Port Harcourt", drops: 4280, kg: 14820, rev: 3480000 },
-  { name: "Ibadan", drops: 2840, kg: 9420, rev: 2180000 },
-  { name: "Kano", drops: 1840, kg: 6280, rev: 1480000 },
-];
-
 export default function AdminDashboard() {
+  const { data: stats, isLoading: statsLoading } = useAdminDashboard();
+  const { data: analytics, isLoading: analyticsLoading } = useAdminAnalytics();
+  const { user } = useAuth();
+  const portalBase = user?.role?.toLowerCase() === "super_admin" ? "/super_admin" : "/admin";
+
+  if (statsLoading || analyticsLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm font-bold text-textgray">Loading ecosystem data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const kpis = {
+    activeCollectors: stats?.activeCollectors ?? 0,
+    kgRecovered: stats?.kgRecovered ?? 0,
+    payouts: stats?.payouts ?? 0,
+    revenue: stats?.revenue ?? 0,
+    hubs: stats?.hubs ?? 0,
+    fleet: stats?.fleet ?? 0,
+    uptime: stats?.uptime ?? "0%",
+    fraud: stats?.fraud ?? 0
+  };
+
+  const overview = Array.isArray(analytics?.overview) ? analytics.overview : [
+    { label: "W1", value: 1200000 }, { label: "W2", value: 1480000 },
+    { label: "W3", value: 1620000 }, { label: "W4", value: 1840000 },
+  ];
+
+  const wasteMix = Array.isArray(analytics?.waste) ? analytics.waste : [
+    { label: "PET Plastic", value: 482, color: "#1A6B3C" },
+    { label: "Cardboard", value: 318, color: "#D4A017" },
+    { label: "Aluminium", value: 184, color: "#3F9264" },
+    { label: "Paper", value: 142, color: "#1C1C2E" },
+    { label: "Glass", value: 84, color: "#A0A4AB" },
+    { label: "E-Waste", value: 30, color: "#E74C3C" },
+  ];
   return (
     <>
       <PageHeader
@@ -38,12 +69,11 @@ export default function AdminDashboard() {
           </>
         }
       />
-
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="Active collectors" value="62,418" sub="+ 1,824 this week" icon={Users} variant="primary" trend={{ value: "+3.0%", direction: "up" }} />
-        <KPICard label="KG recovered" value="1.24M kg" sub="1,240 tonnes" icon={Recycle} variant="default" trend={{ value: "+12% vs LM", direction: "up" }} />
-        <KPICard label="Paid to collectors" value={formatNaira(284000000)} sub="₦284M lifetime" icon={Coins} variant="gold" />
-        <KPICard label="Platform revenue" value={formatNaira(48400000)} sub="MRR ₦8.2M" icon={TrendingUp} variant="dark" trend={{ value: "+28% MoM", direction: "up" }} />
+        <KPICard label="Active collectors" value={formatNumber(kpis.activeCollectors)} sub="+ 1,824 this week" icon={Users} variant="primary" trend={{ value: "+3.0%", direction: "up" }} />
+        <KPICard label="KG recovered" value={formatKg(kpis.kgRecovered, { compact: true })} sub={`${formatNumber(kpis.kgRecovered / 1000)} tonnes`} icon={Recycle} variant="default" trend={{ value: "+12% vs LM", direction: "up" }} />
+        <KPICard label="Paid to collectors" value={formatNaira(kpis.payouts)} sub={`₦${formatNumber(kpis.payouts / 1_000_000, { compact: true })}M lifetime`} icon={Coins} variant="gold" />
+        <KPICard label="Platform revenue" value={formatNaira(kpis.revenue)} sub={`MRR ₦${formatNumber(kpis.revenue / 1_000_000, { compact: true })}M`} icon={TrendingUp} variant="dark" trend={{ value: "+28% MoM", direction: "up" }} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
@@ -53,7 +83,7 @@ export default function AdminDashboard() {
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Monthly revenue</div>
               <div className="mt-2 flex items-baseline gap-3">
-                <div className="font-mono text-3xl font-extrabold">₦8.2M</div>
+                <div className="font-mono text-3xl font-extrabold">{formatNaira(kpis.revenue, { compact: true })}</div>
                 <span className="badge-success">+ 28% MoM</span>
               </div>
             </div>
@@ -64,7 +94,7 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="mt-6">
-            <AreaChart data={REVENUE} height={220} />
+            <AreaChart data={overview} height={220} />
           </div>
         </div>
 
@@ -89,54 +119,77 @@ export default function AdminDashboard() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
-        {/* Cities table */}
-        <div className="card overflow-hidden lg:col-span-7">
-          <div className="border-b border-bordergray p-6">
-            <h3 className="text-h4">Performance by city</h3>
-            <p className="text-sm text-textgray">Live, last 30 days</p>
+        {/* Hub Utilization (Ecosystem) */}
+        <div className="card p-6 lg:col-span-7">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-h4">Hub utilization</h3>
+              <p className="text-sm text-textgray">Capacity vs Actual throughput</p>
+            </div>
+            <Link to={`${portalBase}/management?tab=hubs`} className="text-xs font-bold text-primary hover:underline">Manage hubs</Link>
           </div>
-          <table className="tbl">
-            <thead>
-              <tr><th>City</th><th>Drops</th><th>KG</th><th className="text-right">Revenue</th></tr>
-            </thead>
-            <tbody>
-              {CITIES.map((c) => (
-                <tr key={c.name}>
-                  <td><div className="flex items-center gap-2"><Globe size={14} className="text-primary" /><span className="font-bold">{c.name}</span></div></td>
-                  <td className="font-mono">{c.drops.toLocaleString()}</td>
-                  <td className="font-mono">{(c.kg / 1000).toFixed(1)} t</td>
-                  <td className="text-right"><span className="money">{formatNaira(c.rev)}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <BarChart 
+            data={Array.isArray(analytics?.ecosystem) ? analytics.ecosystem : [
+              { label: "Surulere", value: 78, secondary: 100 },
+              { label: "Lekki", value: 92, secondary: 100 },
+              { label: "Ikeja", value: 45, secondary: 100 },
+              { label: "Ajah", value: 68, secondary: 100 },
+              { label: "Wuse", value: 55, secondary: 100 },
+            ]} 
+            height={240} 
+          />
         </div>
 
         {/* Material mix */}
         <div className="card p-6 lg:col-span-5">
           <h3 className="text-h4">Material mix · platform-wide</h3>
-          <p className="mb-5 text-sm text-textgray">Last 30 days · 1,240 t total</p>
+          <p className="mb-5 text-sm text-textgray">Last 30 days · {formatKg(kpis.kgRecovered, { compact: true })} total</p>
           <Donut
-            centerValue="1,240 t"
+            centerValue={formatKg(kpis.kgRecovered, { compact: true })}
             centerLabel="Recovered"
-            data={[
-              { label: "PET Plastic", value: 482, color: "#1A6B3C" },
-              { label: "Cardboard", value: 318, color: "#D4A017" },
-              { label: "Aluminium", value: 184, color: "#3F9264" },
-              { label: "Paper", value: 142, color: "#1C1C2E" },
-              { label: "Glass", value: 84, color: "#A0A4AB" },
-              { label: "E-Waste", value: 30, color: "#E74C3C" },
-            ]}
+            data={wasteMix}
           />
         </div>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="Active hubs" value="412" sub="22 opened this month" icon={Building2} />
-        <KPICard label="Logistics fleet" value="68 trucks" sub="8 partners" icon={Truck} />
-        <KPICard label="System uptime" value="99.97%" sub="30-day rolling" icon={CheckCircle2} variant="primary" />
-        <KPICard label="Fraud queue" value="9" sub="Avg resolution: 4h" icon={ShieldCheck} variant="dark" />
+        <KPICard label="Active hubs" value={formatNumber(kpis.hubs)} sub="Across 9 cities" icon={Building2} />
+        <KPICard label="Logistics fleet" value={`${kpis.fleet} trucks`} sub="8 active partners" icon={Truck} />
+        <KPICard label="System uptime" value={kpis.uptime} sub="30-day rolling" icon={CheckCircle2} variant="primary" />
+        <KPICard label="Fraud queue" value={formatNumber(kpis.fraud)} sub="9 flagged drops" icon={ShieldCheck} variant="dark" />
       </div>
+
+      {user?.role?.toLowerCase() === "super_admin" && (
+        <div className="mt-8">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-h4">Quick Admin Actions</h3>
+            <span className="text-xs font-bold text-textgray">Super Admin Only</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Link to="/super_admin/management?tab=staff" className="flex items-center gap-4 rounded-3xl bg-white p-6 shadow-lift hover:shadow-soft transition-all">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-primary/10 text-primary"><Users size={20} /></div>
+              <div>
+                <div className="font-extrabold text-charcoal">Staff Control</div>
+                <div className="text-xs text-textgray">Manage admin roles</div>
+              </div>
+            </Link>
+            <Link to="/super_admin/pricing" className="flex items-center gap-4 rounded-3xl bg-white p-6 shadow-lift hover:shadow-soft transition-all">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gold/10 text-gold"><Coins size={20} /></div>
+              <div>
+                <div className="font-extrabold text-charcoal">Pricing Engine</div>
+                <div className="text-xs text-textgray">Adjust payout rates</div>
+              </div>
+            </Link>
+            <Link to="/super_admin/audit-logs" className="flex items-center gap-4 rounded-3xl bg-white p-6 shadow-lift hover:shadow-soft transition-all">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl bg-charcoal/10 text-charcoal"><Activity size={20} /></div>
+              <div>
+                <div className="font-extrabold text-charcoal">Audit Logs</div>
+                <div className="text-xs text-textgray">Track all system actions</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
     </>
   );
 }

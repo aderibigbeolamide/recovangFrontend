@@ -41,7 +41,7 @@ export function AvatarMenu({ portalBase, compact = false }: { portalBase: string
           <span className="text-xs font-extrabold leading-tight text-charcoal">{user?.name ?? "Guest"}</span>
           <span className="text-[10px] uppercase tracking-wider text-textgray leading-tight">{user?.role}</span>
         </span>
-        <ChevronDown size={14} className="text-textgray" />
+        <ChevronDown size={14} className="hidden sm:block text-textgray" />
       </button>
 
       {open && (

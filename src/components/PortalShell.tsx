@@ -31,12 +31,12 @@ export default function PortalShell({ brand, nav, brandTone = "primary", portalB
   return (
     <div className="min-h-screen bg-cream">
       {/* Mobile top bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-2 border-b border-bordergray bg-white/95 px-3 backdrop-blur lg:hidden">
-        <button onClick={() => setOpen(true)} aria-label="Open menu" className="grid h-9 w-9 place-items-center rounded-lg border border-bordergray">
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between gap-1.5 border-b border-bordergray bg-white/95 px-2.5 backdrop-blur lg:hidden">
+        <button onClick={() => setOpen(true)} aria-label="Open menu" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-bordergray">
           <Menu size={18} />
         </button>
-        <Link to="/" className="flex items-center"><LogoMark size={26} /></Link>
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center"><LogoMark size={24} /></Link>
+        <div className="flex items-center gap-1.5">
           <NotificationDropdown size="sm" />
           <AvatarMenu portalBase={portalBase} compact />
         </div>
@@ -59,7 +59,7 @@ export default function PortalShell({ brand, nav, brandTone = "primary", portalB
           </div>
         )}
 
-        <div className="min-h-screen flex-1 lg:pl-[260px]">
+        <div className="min-h-screen flex-1 lg:pl-[260px] min-w-0 max-w-full overflow-hidden">
           {/* Top bar (desktop) */}
           <div className="sticky top-0 z-30 hidden h-16 items-center justify-between border-b border-bordergray bg-cream/85 px-8 backdrop-blur-xl lg:flex">
             <div className="flex items-center gap-2 text-sm text-textgray">
@@ -77,7 +77,7 @@ export default function PortalShell({ brand, nav, brandTone = "primary", portalB
             </div>
           </div>
 
-          <main className="p-4 sm:p-6 lg:p-8">
+          <main className="p-3 sm:p-6 lg:p-8">
             <Outlet />
           </main>
         </div>

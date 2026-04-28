@@ -99,28 +99,30 @@ export default function CollectorDashboard() {
             </div>
             <Link to="/collector/history" className="text-sm font-bold text-primary hover:text-primary-700">View all <ArrowRight size={12} className="inline" /></Link>
           </div>
-          <table className="tbl">
-            <thead>
-              <tr><th>Date</th><th>Hub</th><th>Material</th><th>Weight</th><th className="text-right">Earned</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              {RECENT.map((r, i) => (
-                <tr key={i}>
-                  <td className="text-textgray">{r.date}</td>
-                  <td className="font-bold">{r.hub}</td>
-                  <td>
-                    <div className="flex items-center gap-2">
-                      <CategoryIcon category={r.cat} size={26} />
-                      {r.cat}
-                    </div>
-                  </td>
-                  <td className="font-mono">{r.kg} kg</td>
-                  <td className="text-right"><span className="money text-success">+{formatNaira(r.amt)}</span></td>
-                  <td><StatusPill status={r.status === "verified" ? "success" : "pending"} label={r.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="tbl-container">
+            <table className="tbl">
+              <thead>
+                <tr><th>Date</th><th>Hub</th><th>Material</th><th>Weight</th><th className="text-right">Earned</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                {RECENT.map((r, i) => (
+                  <tr key={i}>
+                    <td className="text-textgray">{r.date}</td>
+                    <td className="font-bold">{r.hub}</td>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <CategoryIcon category={r.cat} size={26} />
+                        {r.cat}
+                      </div>
+                    </td>
+                    <td className="font-mono">{r.kg} kg</td>
+                    <td className="text-right"><span className="money text-success">+{formatNaira(r.amt)}</span></td>
+                    <td><StatusPill status={r.status === "verified" ? "success" : "pending"} label={r.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Category mix */}

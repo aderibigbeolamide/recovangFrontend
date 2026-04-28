@@ -2,7 +2,8 @@ import { Activity, Building2, ChevronDown, Filter, Fuel, MapPin, Navigation, Pac
 import { Avatar, KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { ProgressBar } from "@/components/charts";
 import { CategoryIcon } from "@/components/illustrations";
-import { formatNaira } from "@/lib/cn";
+import { formatKg, formatNaira, formatNumber } from "@/lib/cn";
+import { useHubs, useLogistics } from "@/hooks/useAdmin";
 
 const PARTNERS = [
   { name: "GreenWheels Nigeria", trucks: 8, drivers: 12, rating: 4.9, trips: 2418, on: 96, rev: 48400000, cities: ["Lagos", "Ibadan"] },
@@ -23,6 +24,10 @@ const ROUTES = [
 ];
 
 export default function AdminLogistics() {
+  const { data: partners, isLoading: partnersLoading } = useLogistics();
+  const { data: hubs, isLoading: hubsLoading } = useHubs();
+
+  const isLoading = partnersLoading || hubsLoading;
   return (
     <>
       <PageHeader
@@ -38,10 +43,10 @@ export default function AdminLogistics() {
       />
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <KPICard label="Active partners" value="8" sub="68 trucks" icon={Truck} variant="primary" />
-        <KPICard label="In-transit trucks" value="14" sub="46 idle" icon={Navigation} />
-        <KPICard label="Today's tonnage" value="84.2 t" sub="+ 18% vs yesterday" icon={Package} variant="gold" />
-        <KPICard label="On-time platform-wide" value="92%" sub="Last 30 days" icon={ShieldCheck} variant="dark" />
+        <KPICard label="Active partners" value={formatNumber(partners?.length || 0)} sub="Across all regions" icon={Truck} variant="primary" />
+        <KPICard label="Total Hubs" value={formatNumber(hubs?.length || 0)} sub="Lagos · Abuja · Port Harcourt" icon={Building2} />
+        <KPICard label="Today's tonnage" value="1.2 t" sub="Across all hubs" icon={Package} variant="gold" />
+        <KPICard label="System health" value="98%" sub="Operational" icon={ShieldCheck} variant="dark" />
       </div>
 
       {/* Live routes map */}
@@ -110,36 +115,65 @@ export default function AdminLogistics() {
         <div className="flex flex-wrap items-center gap-3 border-b border-bordergray bg-cream/40 p-4">
           <h3 className="text-h4">Logistics partners</h3>
           <div className="flex-1" />
-          <button className="btn-outline btn-sm"><Filter size={12} /> All states</button>
+          <button className="btn-outline btn-sm"><Filter size={12} /> All types</button>
           <div className="relative">
             <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-textgray" />
             <input className="input h-9 pl-9 text-sm" placeholder="Search partners" />
           </div>
         </div>
         <table className="tbl">
-          <thead><tr><th>Partner</th><th>Fleet</th><th>Rating</th><th>Trips</th><th>On-time</th><th>Cities</th><th className="text-right">Lifetime payout</th></tr></thead>
+          <thead><tr><th>Partner</th><th>Vehicle Info</th><th>Capacity</th><th>Status</th><th className="text-right">Action</th></tr></thead>
           <tbody>
-            {PARTNERS.map((p) => (
-              <tr key={p.name}>
+            {(partners || []).map((p: any) => (
+              <tr key={p.id}>
                 <td>
                   <div className="flex items-center gap-3">
                     <div className="grid h-9 w-9 place-items-center rounded-xl bg-grad-primary text-white"><Truck size={14} /></div>
-                    <span className="font-bold">{p.name}</span>
-                  </div>
-                </td>
-                <td className="font-mono">{p.trucks}T · {p.drivers}D</td>
-                <td><span className="inline-flex items-center gap-1 font-extrabold"><Star size={12} className="fill-accent text-accent" /> {p.rating}</span></td>
-                <td className="font-mono">{p.trips.toLocaleString()}</td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-16 overflow-hidden rounded-full bg-charcoal/8">
-                      <div className="h-full rounded-full bg-success" style={{ width: `${p.on}%` }} />
+                    <div>
+                      <span className="font-bold">{p.user?.firstName} {p.user?.lastName}</span>
+                      <div className="text-[10px] text-textgray">{p.user?.email}</div>
                     </div>
-                    <span className="font-mono text-xs">{p.on}%</span>
                   </div>
                 </td>
-                <td className="text-textgray">{p.cities.join(", ")}</td>
-                <td className="text-right"><span className="money">{formatNaira(p.rev)}</span></td>
+                <td className="font-mono text-xs">{p.vehicleType} · {p.vehicleRegNumber}</td>
+                <td className="font-mono">{formatKg(p.capacityKg)}</td>
+                <td><StatusPill status={p.isOnline ? "success" : "error"} label={p.isOnline ? "Online" : "Offline"} /></td>
+                <td className="text-right">
+                  <button className="btn-ghost btn-sm">Manage</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Hubs */}
+      <div className="mt-6 card overflow-hidden">
+        <div className="flex flex-wrap items-center gap-3 border-b border-bordergray bg-cream/40 p-4">
+          <h3 className="text-h4">Processing Hubs</h3>
+          <div className="flex-1" />
+          <button className="btn-primary btn-sm"><Plus size={12} /> New Hub</button>
+        </div>
+        <table className="tbl">
+          <thead><tr><th>Hub Name</th><th>Address</th><th>Capacity</th><th>Activity</th><th className="text-right">Status</th></tr></thead>
+          <tbody>
+            {(hubs || []).map((h: any) => (
+              <tr key={h.id}>
+                <td>
+                  <div className="flex items-center gap-3">
+                    <div className="grid h-9 w-9 place-items-center rounded-xl bg-charcoal text-white"><Building2 size={14} /></div>
+                    <span className="font-bold">{h.name}</span>
+                  </div>
+                </td>
+                <td>
+                  <div className="text-sm">{h.address}</div>
+                  <div className="text-[10px] text-textgray">{h.lga}, {h.state}</div>
+                </td>
+                <td className="font-mono">{formatKg(h.capacityKg)}</td>
+                <td className="font-mono text-xs">{h.verificationCount || 0} drops</td>
+                <td className="text-right">
+                  <StatusPill status="success" label="Active" />
+                </td>
               </tr>
             ))}
           </tbody>

@@ -52,6 +52,7 @@ export function BarChart({
   formatValue?: (v: number) => string;
 }) {
   color = barColor ?? color;
+  if (!Array.isArray(data) || data.length === 0) return null;
   const max = Math.max(...data.map((d) => d.value), 1);
   return (
     <div>
@@ -106,8 +107,9 @@ export function AreaChart({
   className?: string;
 }) {
   const id = useId().replace(/:/g, "");
-  const max = Math.max(...data.map((d) => d.value));
-  const min = Math.min(...data.map((d) => d.value));
+  if (!Array.isArray(data) || data.length < 2) return null;
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const min = Math.min(...data.map((d) => d.value), 0);
   const range = max - min || 1;
   const step = width / (data.length - 1);
   const pts = data.map((d, i) => [i * step, height - ((d.value - min) / range) * (height - 30) - 20] as const);
@@ -148,6 +150,7 @@ export function Donut({
   centerLabel?: string;
   centerValue?: string;
 }) {
+  if (!Array.isArray(data) || data.length === 0) return null;
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
   const r = (size - thickness) / 2;
   const c = size / 2;

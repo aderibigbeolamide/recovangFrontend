@@ -66,7 +66,7 @@ export function NotificationDropdown({ size = "md" }: { size?: "sm" | "md" }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 origin-top-right overflow-hidden rounded-2xl border border-bordergray bg-white shadow-lift sm:w-96 animate-slideUp">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[calc(100vw-1rem)] sm:w-96 max-w-sm origin-top-right overflow-hidden rounded-2xl border border-bordergray bg-white shadow-lift animate-slideUp">
           <div className="flex items-center justify-between border-b border-bordergray px-4 py-3">
             <div>
               <div className="text-sm font-extrabold text-charcoal">Notifications</div>

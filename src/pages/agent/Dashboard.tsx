@@ -58,17 +58,21 @@ export default function AgentDashboard() {
           </div>
           <div className="divide-y divide-bordergray">
             {QUEUE.map((q) => (
-              <div key={q.id} className="flex items-center gap-4 px-6 py-4">
-                <CategoryIcon category={q.cat} size={42} />
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold">{q.name}</span>
-                    <span className="font-mono text-xs text-textgray">{q.id}</span>
+              <div key={q.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:px-6 sm:py-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <CategoryIcon category={q.cat} size={42} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-extrabold truncate">{q.name}</span>
+                      <span className="font-mono text-[10px] text-textgray shrink-0">{q.id}</span>
+                    </div>
+                    <div className="text-[11px] text-textgray truncate">{q.cat} · ~{q.est}kg estimated</div>
                   </div>
-                  <div className="text-xs text-textgray">{q.cat} · ~{q.est}kg estimated</div>
                 </div>
-                <span className="badge-mint">{q.eta}</span>
-                <button className="btn-primary btn-sm">Verify</button>
+                <div className="flex items-center justify-between sm:justify-end gap-3 border-t border-bordergray/40 pt-3 sm:border-0 sm:pt-0">
+                  <span className="badge-mint shrink-0">{q.eta}</span>
+                  <button className="btn-primary btn-sm flex-1 sm:flex-none">Verify</button>
+                </div>
               </div>
             ))}
           </div>

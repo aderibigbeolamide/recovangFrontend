@@ -2,7 +2,7 @@ export type UserRole =
   | 'collector' 
   | 'agent' 
   | 'admin' 
-  | 'superadmin' 
+  | 'super_admin' 
   | 'brand' 
   | 'factory' 
   | 'logistics';

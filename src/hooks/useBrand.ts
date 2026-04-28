@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import api from "@/services/api";
+import { brandService } from "@/services/brand";
 
-const USE_MOCK = import.meta.env.VITE_USE_MOCK !== "false";
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 
 const MOCK_DASHBOARD = {
   fyTarget: 200000,
@@ -54,8 +54,8 @@ export function useBrandDashboard() {
     queryFn: async () => {
       if (USE_MOCK) return MOCK_DASHBOARD;
       try {
-        const { data } = await api.get("/brand/dashboard");
-        return data;
+        const res = await brandService.getDashboard();
+        return res.data;
       } catch {
         return MOCK_DASHBOARD;
       }

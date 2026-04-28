@@ -1,7 +1,7 @@
 import { Award, Coins, Crown, Gift, Sparkles, Star, TrendingUp, Trophy, Zap } from "lucide-react";
 import { KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { ProgressBar, AreaChart } from "@/components/charts";
-import { formatNaira } from "@/lib/cn";
+import { formatNaira, formatNumber } from "@/lib/cn";
 
 const XP_HISTORY = [
   { label: "M", value: 220 },
@@ -43,7 +43,7 @@ export default function AgentXpEarnings() {
       />
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <KPICard label="Total XP" value={xp.toLocaleString("en-NG")} sub="Steward tier" icon={Sparkles} variant="gold" />
+        <KPICard label="Total XP" value={formatNumber(xp)} sub="Steward tier" icon={Sparkles} variant="gold" />
         <KPICard label="Lifetime commission" value="₦1.84M" sub="Across 18 months" icon={Coins} variant="primary" />
         <KPICard label="This month" value="₦100,920" sub="+ 12% vs last mo" icon={TrendingUp} trend={{ value: "+12%", direction: "up" }} />
         <KPICard label="Active rank" value="#12 / 412" sub="Top 3% in Lagos" icon={Trophy} variant="dark" />
@@ -65,7 +65,7 @@ export default function AgentXpEarnings() {
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-extrabold text-white">{t.name}</span>
-                    <span className="font-mono text-xs text-white/60">{t.min.toLocaleString()} – {t.max.toLocaleString()} XP</span>
+                    <span className="font-mono text-xs text-white/60">{formatNumber(t.min)} – {formatNumber(t.max)} XP</span>
                   </div>
                   {t.current && (
                     <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
@@ -143,7 +143,7 @@ export default function AgentXpEarnings() {
               {PAYOUTS.map((p) => (
                 <tr key={p.period}>
                   <td className="font-bold">{p.period}</td>
-                  <td className="font-mono">{p.drops.toLocaleString()}</td>
+                  <td className="font-mono">{formatNumber(p.drops)}</td>
                   <td className="font-mono">{formatNaira(p.comm)}</td>
                   <td className="font-mono money">{formatNaira(p.bonus)}</td>
                   <td><StatusPill status={p.status === "paid" ? "success" : "pending"} label={p.status === "paid" ? "Paid" : "In progress"} /></td>

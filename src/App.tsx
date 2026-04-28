@@ -57,6 +57,8 @@ import AdminManagement from "@/pages/admin/Management";
 import AdminLogistics from "@/pages/admin/Logistics";
 import AdminFraud from "@/pages/admin/Fraud";
 import AdminAuditLogs from "@/pages/admin/AuditLogs";
+import AdminPricing from "@/pages/admin/Pricing";
+import AdminPayouts from "@/pages/admin/Payouts";
 
 import BrandDashboard from "@/pages/brand/Dashboard";
 import BrandCompliance from "@/pages/brand/Compliance";
@@ -101,10 +103,18 @@ const logisticsNav: NavItem[] = [
 ];
 const adminNav: NavItem[] = [
   { to: "/admin/dashboard", label: "Dashboard", icon: <Activity size={15} /> },
-  { to: "/admin/management", label: "Management", icon: <Users size={15} /> },
-  { to: "/admin/logistics", label: "Logistics", icon: <Truck size={15} /> },
   { to: "/admin/fraud", label: "Fraud queue", icon: <ShieldCheck size={15} />, badge: 9 },
   { to: "/admin/audit-logs", label: "Audit logs", icon: <ScrollText size={15} /> },
+];
+
+const superAdminNav: NavItem[] = [
+  { to: "/super_admin/dashboard", label: "Dashboard", icon: <Activity size={15} /> },
+  { to: "/super_admin/management", label: "Management", icon: <Users size={15} /> },
+  { to: "/super_admin/logistics", label: "Logistics", icon: <Truck size={15} /> },
+  { to: "/super_admin/payouts", label: "Payout queue", icon: <Wallet size={15} />, badge: 12 },
+  { to: "/super_admin/pricing", label: "Pricing console", icon: <Coins size={15} /> },
+  { to: "/super_admin/fraud", label: "Fraud queue", icon: <ShieldCheck size={15} />, badge: 9 },
+  { to: "/super_admin/audit-logs", label: "Audit logs", icon: <ScrollText size={15} /> },
 ];
 const brandNav: NavItem[] = [
   { to: "/brand/dashboard", label: "Dashboard", icon: <LayoutGrid size={15} /> },
@@ -124,7 +134,18 @@ const factoryNav: NavItem[] = [
 
 function Protected({ role, children }: { role: string; children: JSX.Element }) {
   const { token, user } = useAuth();
-  if (!token || !user || user.role !== role) return <Navigate to="/auth/login" replace />;
+  
+  if (!token) return <Navigate to="/auth/login" replace />;
+  if (!user) return <div className="flex h-screen items-center justify-center bg-cream font-bold text-primary">Loading session…</div>;
+
+  const userRole = user.role.toLowerCase();
+  const targetRole = role.toLowerCase();
+
+  if (userRole !== targetRole) {
+    console.warn(`Role mismatch: expected ${targetRole}, got ${userRole}`);
+    return <Navigate to="/auth/login" replace />;
+  }
+  
   return children;
 }
 
@@ -214,6 +235,22 @@ export default function App() {
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="management" element={<AdminManagement />} />
               <Route path="logistics" element={<AdminLogistics />} />
+              <Route path="fraud" element={<AdminFraud />} />
+              <Route path="audit-logs" element={<AdminAuditLogs />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+
+            {/* SUPER ADMIN */}
+            <Route
+              path="super_admin"
+              element={<Protected role="super_admin"><PortalShell brand="Super Admin" nav={superAdminNav} portalBase="/super_admin" /></Protected>}
+            >
+              <Route index element={<Navigate to="/super_admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="management" element={<AdminManagement />} />
+              <Route path="logistics" element={<AdminLogistics />} />
+              <Route path="payouts" element={<AdminPayouts />} />
+              <Route path="pricing" element={<AdminPricing />} />
               <Route path="fraud" element={<AdminFraud />} />
               <Route path="audit-logs" element={<AdminAuditLogs />} />
               <Route path="settings" element={<SettingsPage />} />

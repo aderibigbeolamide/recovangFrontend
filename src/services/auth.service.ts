@@ -1,7 +1,7 @@
 import api from "./api";
 import { DEMO_USERS, type AuthUser } from "@/store/auth";
 
-const USE_MOCK = (import.meta.env.VITE_USE_MOCK ?? "true") !== "false";
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
 const DEMO_PASS = "demo-pass";
 
 const lookupByEmail = (email: string): AuthUser | undefined =>
@@ -30,8 +30,21 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
     }
     return delay({ user, token: `demo.token.${user.role}` });
   }
-  const { data } = await api.post("/auth/login", payload);
-  return { user: data.user, token: data.token ?? data.access_token };
+  const { data: res } = await api.post("/auth/login", payload);
+  const data = res.data ?? res; 
+  
+  // Normalize role and user data
+  const user = {
+    ...data.user,
+    name: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || "User",
+    avatarLetters: (data.user.firstName?.[0] || "") + (data.user.lastName?.[0] || ""),
+    role: (data.user.role || "").toLowerCase()
+  };
+
+  return { 
+    user, 
+    token: data.accessToken || data.token || data.access_token 
+  };
 }
 
 export interface RegisterPayload {
@@ -58,8 +71,20 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
     };
     return delay({ user, token: `demo.token.${user.role}` });
   }
-  const { data } = await api.post("/auth/register", payload);
-  return { user: data.user, token: data.token ?? data.access_token };
+  const { data: res } = await api.post("/auth/register", payload);
+  const data = res.data ?? res;
+  
+  const user = {
+    ...data.user,
+    name: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || "User",
+    avatarLetters: (data.user.firstName?.[0] || "") + (data.user.lastName?.[0] || ""),
+    role: (data.user.role || "").toLowerCase()
+  };
+
+  return { 
+    user, 
+    token: data.accessToken || data.token || data.access_token 
+  };
 }
 
 export async function logout(): Promise<void> {

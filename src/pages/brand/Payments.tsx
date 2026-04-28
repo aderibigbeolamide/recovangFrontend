@@ -4,7 +4,7 @@ import { KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Modal } from "@/components/Modal";
 import { useBrandDashboard } from "@/hooks/useBrand";
-import { formatNaira } from "@/lib/cn";
+import { formatNaira, formatNumber } from "@/lib/cn";
 
 export default function BrandPayments() {
   const { data } = useBrandDashboard();
@@ -81,7 +81,7 @@ export default function BrandPayments() {
           </div>
           <div>
             <label className="label">Amount</label>
-            <input className="input font-mono text-lg font-extrabold" defaultValue={data.outstandingFee.toLocaleString()} />
+            <input className="input font-mono text-lg font-extrabold" defaultValue={formatNumber(data?.outstandingFee ?? 0)} />
           </div>
         </div>
       </Modal>

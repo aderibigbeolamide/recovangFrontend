@@ -16,6 +16,9 @@ const FLAGS = [
   { id: "FR-2411", drop: "RX-2411", risk: "high", reason: "ML model: 92% probability synthetic photo", collector: "Anonymous user 28488", hub: "Lekki Hub", agent: "Folake A.", cat: "Aluminium Cans", weight: 4.6, payout: 2760, time: "3h ago" },
 ];
 
+import { useFlaggedSubmissions } from "@/hooks/useAdmin";
+import { formatKg, formatNumber } from "@/lib/cn";
+
 const RISK_MAP: Record<string, { c: string; l: string }> = {
   high: { c: "error", l: "High risk" },
   medium: { c: "warning", l: "Medium risk" },
@@ -23,8 +26,17 @@ const RISK_MAP: Record<string, { c: string; l: string }> = {
 };
 
 export default function AdminFraud() {
-  const [active, setActive] = useState(FLAGS[0].id);
-  const sel = FLAGS.find((f) => f.id === active)!;
+  const { data: flagged, isLoading } = useFlaggedSubmissions();
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const flags = Array.isArray(flagged) && flagged.length > 0 ? flagged : [
+    { id: "FR-2419", drop: "RX-2419", risk: "high", reason: "Weight 240% above scale capacity for 4 photos shown", collector: "Anonymous user 28482", hub: "Lekki Hub", agent: "Folake A.", cat: "PET Bottles", weight: 18.4, payout: 3680, time: "2 mins ago" },
+    { id: "FR-2418", drop: "RX-2418", risk: "high", reason: "Same hub, same collector, 14 drops in 12 minutes", collector: "Tunde Bello", hub: "Yaba Centre", agent: "Tope D.", cat: "Cardboard", weight: 6.0, payout: 480, time: "8 mins ago" },
+  ];
+
+  const sel = flags.find((f: any) => f.id === (activeId || flags[0]?.id)) || flags[0];
+
+  if (!sel) return null;
   return (
     <>
       <PageHeader
@@ -48,34 +60,39 @@ export default function AdminFraud() {
               <button className="btn-outline btn-sm"><Filter size={11} /> All risks</button>
               <button className="btn-outline btn-sm">All hubs <ChevronDown size={11} /></button>
               <div className="flex-1" />
-              <span className="badge bg-error-50 text-error">{FLAGS.length}</span>
+              <span className="badge bg-error-50 text-error">{flags.length}</span>
             </div>
-            <div className="divide-y divide-bordergray max-h-[640px] overflow-auto">
-              {FLAGS.map((f) => {
-                const r = RISK_MAP[f.risk];
-                return (
-                  <button
-                    key={f.id}
-                    onClick={() => setActive(f.id)}
-                    className={`flex w-full items-start gap-3 p-4 text-left transition ${active === f.id ? "bg-mint/40 border-l-4 border-l-primary" : "hover:bg-cream border-l-4 border-l-transparent"}`}
-                  >
-                    <CategoryIcon category={f.cat} size={36} />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[11px] font-bold text-primary">{f.id}</span>
-                        <span className={`badge bg-${r.c}-50 text-${r.c}`}>{r.l}</span>
+            {isLoading ? (
+              <div className="p-12 flex justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+            ) : (
+              <div className="divide-y divide-bordergray max-h-[640px] overflow-auto">
+                {flags.map((f: any) => {
+                  const r = RISK_MAP[f.risk] || RISK_MAP.low;
+                  const isActive = sel?.id === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      onClick={() => setActiveId(f.id)}
+                      className={`flex w-full items-start gap-3 p-4 text-left transition ${isActive ? "bg-mint/40 border-l-4 border-l-primary" : "hover:bg-cream border-l-4 border-l-transparent"}`}
+                    >
+                      <CategoryIcon category={f.cat} size={36} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] font-bold text-primary">{f.id}</span>
+                          <span className={`badge bg-${r.c}-50 text-${r.c}`}>{r.l}</span>
+                        </div>
+                        <div className="mt-1 truncate text-sm font-extrabold">{f.collector}</div>
+                        <div className="mt-1 line-clamp-2 text-[11px] text-textgray">{f.reason}</div>
+                        <div className="mt-2 flex items-center justify-between text-[10px] text-textgray">
+                          <span>{f.hub}</span>
+                          <span>{f.time}</span>
+                        </div>
                       </div>
-                      <div className="mt-1 truncate text-sm font-extrabold">{f.collector}</div>
-                      <div className="mt-1 line-clamp-2 text-[11px] text-textgray">{f.reason}</div>
-                      <div className="mt-2 flex items-center justify-between text-[10px] text-textgray">
-                        <span>{f.hub}</span>
-                        <span>{f.time}</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
 
@@ -149,7 +166,7 @@ export default function AdminFraud() {
                 <button className="btn-ghost"><Flag size={14} /> Escalate</button>
                 <div className="flex-1" />
                 <button className="btn-outline text-error border-error/30 hover:bg-error/5"><X size={14} /> Reject & freeze account</button>
-                <button className="btn-primary"><Check size={14} /> Approve & release ₦{sel.payout.toLocaleString()}</button>
+                <button className="btn-primary"><Check size={14} /> Approve & release ₦{formatNumber(sel.payout)}</button>
               </div>
             </div>
           </div>

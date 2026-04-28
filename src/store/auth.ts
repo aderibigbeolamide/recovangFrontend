@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type UserRole = "collector" | "agent" | "logistics" | "admin" | "brand" | "factory";
+export type UserRole = "collector" | "agent" | "logistics" | "admin" | "brand" | "factory" | "super_admin";
 
 export interface AuthUser {
   id: string;
@@ -43,4 +43,5 @@ export const DEMO_USERS: Record<UserRole, AuthUser> = {
   admin: { id: "u_x1", name: "Recovang Admin", email: "admin@recovang.com", phone: "+234 700 RECOVANG", role: "admin", avatarLetters: "RA" },
   brand: { id: "u_b1", name: "Chioma Okeke", email: "chioma@coca-cola.ng", phone: "+234 802 555 0199", role: "brand", company: "Coca-Cola Nigeria", avatarLetters: "CO" },
   factory: { id: "u_f1", name: "Tunde Bakare", email: "tunde@indorama.ng", phone: "+234 803 555 0155", role: "factory", company: "Indorama PET Recyclers", avatarLetters: "TB" },
+  super_admin: { id: "u_sa1", name: "Recovang Super Admin", email: "superadmin@recovang.com", phone: "+234 700 RECOVANG", role: "super_admin", avatarLetters: "SA" },
 };

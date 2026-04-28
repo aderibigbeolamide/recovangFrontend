@@ -3,16 +3,21 @@ import { ArrowRight, Boxes, ClipboardCheck, Coins, PackageCheck, ShoppingCart, T
 import { KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { AreaChart } from "@/components/charts";
 import { useFactoryDashboard } from "@/hooks/useFactory";
-import { formatNaira, formatKg } from "@/lib/cn";
+import { formatNaira, formatKg, formatNumber } from "@/lib/cn";
 
 export default function FactoryDashboard() {
   const { data } = useFactoryDashboard();
   if (!data) return null;
 
-  const totalKg = data.supply.reduce((s: number, x: any) => s + x.kg, 0);
-  const ordersValue = data.orders.reduce((s: number, x: any) => s + x.total, 0);
-  const inTransit = data.shipments.filter((s: any) => s.status === "in-transit" || s.status === "loading").length;
-  const pendingReceipts = data.receipts.filter((r: any) => r.status === "pending").length;
+  const supply = Array.isArray(data?.supply) ? data.supply : [];
+  const orders = Array.isArray(data?.orders) ? data.orders : [];
+  const shipments = Array.isArray(data?.shipments) ? data.shipments : [];
+  const receipts = Array.isArray(data?.receipts) ? data.receipts : [];
+
+  const totalKg = supply.reduce((s: number, x: any) => s + x.kg, 0);
+  const ordersValue = orders.reduce((s: number, x: any) => s + x.total, 0);
+  const inTransit = shipments.filter((s: any) => s.status === "in-transit" || s.status === "loading").length;
+  const pendingReceipts = receipts.filter((r: any) => r.status === "pending").length;
 
   const monthly = [
     { label: "W1", value: 22000 },
@@ -36,9 +41,9 @@ export default function FactoryDashboard() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="Available stock" value={formatKg(totalKg, { compact: true })} sub={`${data.supply.length} categories live`} icon={Boxes} variant="primary" />
-        <KPICard label="Orders value (30d)" value={formatNaira(ordersValue, { compact: true })} sub={`${data.orders.length} orders`} icon={Coins} variant="gold" trend={{ value: "+18% MoM", direction: "up" }} />
-        <KPICard label="In-transit shipments" value={`${inTransit}`} sub={`${data.shipments.length} total this week`} icon={Truck} />
+        <KPICard label="Available stock" value={formatKg(totalKg, { compact: true })} sub={`${supply.length} categories live`} icon={Boxes} variant="primary" />
+        <KPICard label="Orders value (30d)" value={formatNaira(ordersValue, { compact: true })} sub={`${orders.length} orders`} icon={Coins} variant="gold" trend={{ value: "+18% MoM", direction: "up" }} />
+        <KPICard label="In-transit shipments" value={`${inTransit}`} sub={`${shipments.length} total this week`} icon={Truck} />
         <KPICard label="Pending receipts" value={`${pendingReceipts}`} sub="Awaiting QA verification" icon={ClipboardCheck} variant="dark" />
       </div>
 
@@ -87,11 +92,11 @@ export default function FactoryDashboard() {
           <table className="tbl">
             <thead><tr><th>Order</th><th>Material</th><th>Weight</th><th className="text-right">Total</th><th>Status</th></tr></thead>
             <tbody>
-              {data.orders.slice(0, 5).map((o: any) => (
+              {orders.slice(0, 5).map((o: any) => (
                 <tr key={o.id}>
                   <td className="font-mono text-xs">{o.id}</td>
                   <td className="font-bold">{o.category}</td>
-                  <td className="font-mono">{o.kg.toLocaleString()} kg</td>
+                  <td className="font-mono">{formatNumber(o.kg)} kg</td>
                   <td className="text-right"><span className="money">{formatNaira(o.total)}</span></td>
                   <td><StatusPill status={o.status === "delivered" ? "success" : o.status === "in-transit" || o.status === "processing" ? "pending" : "error"} label={o.status} /></td>
                 </tr>
@@ -107,7 +112,7 @@ export default function FactoryDashboard() {
             <Link to="/factory/receipts" className="text-sm font-bold text-primary">Verify <ArrowRight size={12} className="inline" /></Link>
           </div>
           <ul className="divide-y divide-bordergray">
-            {data.receipts.filter((r: any) => r.status === "pending").map((r: any) => (
+            {receipts.filter((r: any) => r.status === "pending").map((r: any) => (
               <li key={r.id} className="flex items-center justify-between gap-3 px-6 py-4">
                 <div>
                   <div className="text-sm font-extrabold">{r.orderId}</div>

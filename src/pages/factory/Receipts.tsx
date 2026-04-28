@@ -4,6 +4,7 @@ import { PageHeader, StatusPill } from "@/components/ui";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Modal, ConfirmModal } from "@/components/Modal";
 import { useFactoryDashboard, FACTORY_MOCK } from "@/hooks/useFactory";
+import { formatNumber } from "@/lib/cn";
 
 export default function FactoryReceipts() {
   const { data } = useFactoryDashboard();
@@ -34,8 +35,8 @@ export default function FactoryReceipts() {
   const columns: Column<Row>[] = [
     { key: "id", header: "Receipt", className: "font-mono text-xs", render: (r) => r.id, searchValue: (r) => r.id },
     { key: "ord", header: "Order", className: "font-mono text-xs", render: (r) => r.orderId, searchValue: (r) => r.orderId },
-    { key: "exp", header: "Expected", className: "font-mono", render: (r) => `${r.expectedKg.toLocaleString()} kg` },
-    { key: "del", header: "Delivered", className: "font-mono", render: (r) => `${r.deliveredKg.toLocaleString()} kg` },
+    { key: "exp", header: "Expected", className: "font-mono", render: (r) => `${formatNumber(r.expectedKg)} kg` },
+    { key: "del", header: "Delivered", className: "font-mono", render: (r) => `${formatNumber(r.deliveredKg)} kg` },
     { key: "var", header: "Variance", render: (r) => (
       <span className={r.variancePct < -1 ? "font-mono font-bold text-error" : "font-mono font-bold text-success"}>
         {r.variancePct > 0 ? "+" : ""}{r.variancePct}%
@@ -96,7 +97,7 @@ export default function FactoryReceipts() {
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-cream p-3">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Expected</div>
-                <div className="mt-1 font-mono text-lg font-extrabold">{verify.expectedKg.toLocaleString()} kg</div>
+                <div className="mt-1 font-mono text-lg font-extrabold">{formatNumber(verify.expectedKg)} kg</div>
               </div>
               <div className="rounded-2xl bg-mint p-3">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-primary">On the scale</div>

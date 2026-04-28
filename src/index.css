@@ -15,7 +15,7 @@
     -moz-osx-font-smoothing: grayscale;
   }
   body {
-    @apply bg-cream text-charcoal font-sans;
+    @apply bg-cream text-charcoal font-sans overflow-x-hidden;
     font-feature-settings: "ss01", "cv11";
   }
   h1, h2, h3, h4, h5, h6 {
@@ -43,7 +43,7 @@
 
   /* Buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap w-full sm:w-auto;
   }
   .btn-primary {
     @apply btn bg-primary text-white shadow-glow hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0;
@@ -65,19 +65,19 @@
 
   /* Cards */
   .card {
-    @apply rounded-3xl border border-bordergray/80 bg-white shadow-soft;
+    @apply rounded-3xl border border-bordergray/80 bg-white shadow-soft overflow-hidden;
   }
   .card-tight {
-    @apply rounded-2xl border border-bordergray/80 bg-white shadow-soft;
+    @apply rounded-2xl border border-bordergray/80 bg-white shadow-soft overflow-hidden;
   }
   .card-dark {
-    @apply rounded-3xl border border-white/10 bg-grad-dark text-white shadow-lift;
+    @apply rounded-3xl border border-white/10 bg-grad-dark text-white shadow-lift overflow-hidden;
   }
   .card-primary {
-    @apply rounded-3xl bg-grad-primary text-white shadow-glow;
+    @apply rounded-3xl bg-grad-primary text-white shadow-glow overflow-hidden;
   }
   .card-gold {
-    @apply rounded-3xl bg-grad-gold text-charcoal shadow-gold;
+    @apply rounded-3xl bg-grad-gold text-charcoal shadow-gold overflow-hidden;
   }
 
   /* Inputs */
@@ -108,8 +108,8 @@
   }
 
   /* Section spacing */
-  .section { @apply py-20 sm:py-28; }
-  .section-tight { @apply py-12 sm:py-16; }
+  .section { @apply py-10 sm:py-28; }
+  .section-tight { @apply py-8 sm:py-16; }
 
   /* Decorative grid bg */
   .bg-grid {
@@ -147,13 +147,15 @@
   /* Table */
   .tbl { @apply w-full text-left text-sm; }
   .tbl thead th {
-    @apply border-b border-bordergray px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-textgray;
+    @apply border-b border-bordergray px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-textgray whitespace-nowrap;
   }
   .tbl tbody td {
-    @apply border-b border-bordergray/60 px-4 py-3.5 text-sm align-middle;
+    @apply border-b border-bordergray/60 px-4 py-3.5 text-sm align-middle whitespace-nowrap;
   }
   .tbl tbody tr:hover { @apply bg-cream/60; }
   .tbl tbody tr:last-child td { @apply border-b-0; }
+
+  .tbl-container { @apply w-full overflow-x-auto rounded-xl; }
 }
 
 @layer utilities {
@@ -164,6 +166,13 @@
   }
   .ring-soft {
     box-shadow: 0 0 0 1px rgba(28,28,46,0.06);
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 }
 

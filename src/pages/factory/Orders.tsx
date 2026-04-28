@@ -4,7 +4,7 @@ import { PageHeader, StatusPill } from "@/components/ui";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Modal, ConfirmModal } from "@/components/Modal";
 import { useFactoryDashboard, FACTORY_MOCK } from "@/hooks/useFactory";
-import { formatNaira } from "@/lib/cn";
+import { formatNaira, formatNumber } from "@/lib/cn";
 
 export default function FactoryOrders() {
   const { data } = useFactoryDashboard();
@@ -23,7 +23,7 @@ export default function FactoryOrders() {
     { key: "id", header: "Order", className: "font-mono text-xs", render: (r) => r.id, searchValue: (r) => r.id },
     { key: "date", header: "Date", render: (r) => r.date, searchValue: (r) => r.date },
     { key: "cat", header: "Material", render: (r) => <span className="font-bold">{r.category}</span>, searchValue: (r) => r.category },
-    { key: "kg", header: "Weight", className: "font-mono", render: (r) => `${r.kg.toLocaleString()} kg` },
+    { key: "kg", header: "Weight", className: "font-mono", render: (r) => `${formatNumber(r.kg)} kg` },
     { key: "hub", header: "Origin", render: (r) => r.hub, searchValue: (r) => r.hub },
     { key: "total", header: "Total", className: "font-mono text-right", render: (r) => formatNaira(r.total) },
     { key: "status", header: "Status", render: (r) => (
@@ -81,7 +81,7 @@ export default function FactoryOrders() {
             <Detail label="Date" value={view.date} />
             <Detail label="Origin hub" value={view.hub} />
             <Detail label="ETA" value={view.eta} />
-            <Detail label="Weight" value={`${view.kg.toLocaleString()} kg`} />
+            <Detail label="Weight" value={`${formatNumber(view.kg)} kg`} />
             <Detail label="Total" value={formatNaira(view.total)} />
             <Detail label="Status" value={<StatusPill status={view.status === "delivered" ? "success" : view.status === "cancelled" ? "error" : "pending"} label={view.status} />} />
             <Detail label="Carrier" value="RCL Logistics" />

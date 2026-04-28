@@ -1,4 +1,5 @@
 import { MapPin, Truck } from "lucide-react";
+import { formatNumber } from "@/lib/cn";
 import { PageHeader, StatusPill } from "@/components/ui";
 import { DataTable, type Column } from "@/components/DataTable";
 import { ProgressBar } from "@/components/charts";
@@ -15,7 +16,7 @@ export default function FactoryShipments() {
     { key: "to", header: "Destination", render: (r) => r.destination, searchValue: (r) => r.destination },
     { key: "carrier", header: "Carrier", render: (r) => <span className="inline-flex items-center gap-1.5"><Truck size={12} className="text-textgray" /> {r.carrier}</span>, searchValue: (r) => r.carrier },
     { key: "truck", header: "Truck", className: "font-mono text-xs", render: (r) => r.truck, searchValue: (r) => r.truck },
-    { key: "kg", header: "Weight", className: "font-mono", render: (r) => `${r.kg.toLocaleString()} kg` },
+    { key: "kg", header: "Weight", className: "font-mono", render: (r) => `${formatNumber(r.kg)} kg` },
     { key: "eta", header: "ETA", render: (r) => r.eta },
     { key: "progress", header: "Progress", render: (r) => <div className="min-w-[120px]"><ProgressBar value={r.progress} color={r.status === "delivered" ? "#27AE60" : r.status === "cancelled" ? "#E74C3C" : "#1A6B3C"} /></div> },
     { key: "status", header: "Status", render: (r) => (

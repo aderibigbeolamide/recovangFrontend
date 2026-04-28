@@ -64,8 +64,8 @@ export default {
       fontSize: {
         "display-xl": ["clamp(3rem, 8vw, 6rem)", { lineHeight: "0.95", letterSpacing: "-0.04em", fontWeight: "800" }],
         "display": ["clamp(2.5rem, 6vw, 4.5rem)", { lineHeight: "1.02", letterSpacing: "-0.035em", fontWeight: "800" }],
-        "h1": ["clamp(2rem, 4vw, 3rem)", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],
-        "h2": ["clamp(1.5rem, 2.5vw, 2rem)", { lineHeight: "1.2", letterSpacing: "-0.015em", fontWeight: "700" }],
+        "h1": ["clamp(1.75rem, 4vw, 3rem)", { lineHeight: "1.1", letterSpacing: "-0.02em", fontWeight: "800" }],
+        "h2": ["clamp(1.35rem, 2.5vw, 2rem)", { lineHeight: "1.2", letterSpacing: "-0.015em", fontWeight: "700" }],
         "h3": ["1.5rem", { lineHeight: "1.25", fontWeight: "700" }],
         "h4": ["1.25rem", { lineHeight: "1.3", fontWeight: "700" }],
         "eyebrow": ["0.75rem", { lineHeight: "1.4", letterSpacing: "0.14em", fontWeight: "700" }],

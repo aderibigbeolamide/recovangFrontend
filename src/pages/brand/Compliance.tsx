@@ -3,7 +3,7 @@ import { PageHeader, StatusPill } from "@/components/ui";
 import { ProgressBar } from "@/components/charts";
 import { DataTable, type Column } from "@/components/DataTable";
 import { useBrandDashboard } from "@/hooks/useBrand";
-import { formatNaira } from "@/lib/cn";
+import { formatNaira, formatNumber } from "@/lib/cn";
 
 export default function BrandCompliance() {
   const { data } = useBrandDashboard();
@@ -21,7 +21,7 @@ export default function BrandCompliance() {
       render: (r) => <span className="inline-flex items-center gap-1.5"><Recycle size={12} className="text-primary" /> {r.category}</span>,
       searchValue: (r) => r.category,
     },
-    { key: "kg", header: "Weight", className: "font-mono", render: (r) => `${r.kg.toLocaleString()} kg`, searchValue: (r) => `${r.kg}` },
+    { key: "kg", header: "Weight", className: "font-mono", render: (r) => `${formatNumber(r.kg)} kg`, searchValue: (r) => `${r.kg}` },
     { key: "value", header: "EPR value", className: "text-right", render: (r) => <span className="money">{formatNaira(r.value)}</span> },
   ];
 
@@ -44,7 +44,7 @@ export default function BrandCompliance() {
                   <StatusPill status={pct >= 75 ? "success" : pct >= 50 ? "warning" : "error"} label={`${pct}%`} />
                 </div>
                 <ProgressBar value={c.recovered} max={c.target} color={c.color} />
-                <div className="mt-1 text-[10px] text-textgray">{c.recovered.toLocaleString()} / {c.target.toLocaleString()} kg</div>
+                <div className="mt-1 text-[10px] text-textgray">{formatNumber(c.recovered)} / {formatNumber(c.target)} kg</div>
               </div>
             );
           })}

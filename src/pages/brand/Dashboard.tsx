@@ -13,7 +13,13 @@ export default function BrandDashboard() {
   const [showCert, setShowCert] = useState(false);
 
   if (!data) return null;
-  const compliancePct = Math.round((data.recovered / data.fyTarget) * 100);
+  const monthly = Array.isArray(data?.monthly) ? data.monthly : [];
+  const byCategory = Array.isArray(data?.byCategory) ? data.byCategory : [];
+  const recentRecoveries = Array.isArray(data?.recentRecoveries) ? data.recentRecoveries : [];
+
+  const fyTarget = data?.fyTarget ?? 1;
+  const recovered = data?.recovered ?? 0;
+  const compliancePct = Math.round((recovered / fyTarget) * 100);
 
   return (
     <>
@@ -29,11 +35,11 @@ export default function BrandDashboard() {
         }
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="FY recovery target" value={formatKg(data.fyTarget)} sub="2026 financial year" icon={Target} variant="primary" />
-        <KPICard label="Recovered to date" value={formatKg(data.recovered)} sub={`${compliancePct}% of target`} icon={Recycle} variant="gold" trend={{ value: "+12% MoM", direction: "up" }} />
-        <KPICard label="Outstanding fee" value={formatNaira(data.outstandingFee)} sub={data.quarter} icon={Coins} />
-        <KPICard label="Certificates issued" value={`${data.certIssued}`} sub="Quarterly · audited" icon={Award} variant="dark" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 w-full max-w-full">
+        <KPICard label="FY recovery target" value={formatKg(fyTarget)} sub="2026 financial year" icon={Target} variant="primary" className="min-w-0" />
+        <KPICard label="Recovered to date" value={formatKg(recovered)} sub={`${compliancePct}% of target`} icon={Recycle} variant="gold" trend={{ value: "+12% MoM", direction: "up" }} className="min-w-0" />
+        <KPICard label="Outstanding fee" value={formatNaira(data?.outstandingFee ?? 0)} sub={data?.quarter ?? "Current Quarter"} icon={Coins} className="min-w-0" />
+        <KPICard label="Certificates issued" value={`${data?.certIssued ?? 0}`} sub="Quarterly · audited" icon={Award} variant="dark" className="min-w-0" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
@@ -43,7 +49,7 @@ export default function BrandDashboard() {
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Monthly recovery (kg)</div>
               <div className="mt-2 flex items-baseline gap-3">
-                <div className="font-mono text-3xl font-extrabold">{formatKg(data.monthly[data.monthly.length - 1].value)}</div>
+                <div className="font-mono text-3xl font-extrabold">{formatKg(monthly?.[monthly?.length - 1]?.value ?? 0)}</div>
                 <span className="badge-success">+ 22% vs LM</span>
               </div>
             </div>
@@ -54,18 +60,18 @@ export default function BrandDashboard() {
             </div>
           </div>
           <div className="mt-6">
-            <AreaChart data={data.monthly} height={220} />
+            <AreaChart data={monthly} height={220} />
           </div>
         </div>
 
         {/* Compliance ring */}
-        <div className="card p-6 lg:col-span-4">
+        <div className="card p-5 lg:col-span-4 min-w-0 overflow-hidden">
           <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">{data.quarter} compliance</div>
           <div className="mt-4 flex items-center gap-5">
             <ProgressRing value={compliancePct} size={120} thickness={12} color="#1A6B3C" label="of target" />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <div className="font-display text-2xl font-extrabold">{formatKg(data.recovered)}</div>
-              <p className="mt-1 text-xs text-textgray">of {formatKg(data.fyTarget)} target. Stay above 75% to qualify for the Africa EPR Gold Tier rebate.</p>
+              <p className="mt-1 text-[11px] text-textgray leading-tight break-words max-w-full">of {formatKg(data.fyTarget)} target. Stay above 75% to qualify for Gold Tier rebate.</p>
             </div>
           </div>
           <button onClick={() => setShowCert(true)} className="btn-outline mt-5 w-full">
@@ -83,18 +89,18 @@ export default function BrandDashboard() {
           </div>
           <Link to="/brand/compliance" className="text-sm font-bold text-primary">Full report <ArrowRight size={12} className="inline" /></Link>
         </div>
-        <div className="grid gap-5 p-6 sm:grid-cols-2 lg:grid-cols-3">
-          {data.byCategory.map((c: any) => {
+        <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
+          {byCategory.map((c: any) => {
             const pct = Math.round((c.recovered / c.target) * 100);
             return (
-              <div key={c.name} className="rounded-2xl border border-bordergray p-5">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-extrabold">{c.name}</div>
+              <div key={c.name} className="rounded-2xl border border-bordergray p-4 sm:p-5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-extrabold truncate">{c.name}</div>
                   <StatusPill status={pct >= 75 ? "success" : pct >= 50 ? "warning" : "error"} label={`${pct}%`} />
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
-                  <div className="font-mono text-2xl font-extrabold">{formatKg(c.recovered, { compact: true })}</div>
-                  <div className="text-xs text-textgray">/ {formatKg(c.target, { compact: true })}</div>
+                  <div className="font-mono text-xl sm:text-2xl font-extrabold">{formatKg(c.recovered, { compact: true })}</div>
+                  <div className="text-[11px] text-textgray">/ {formatKg(c.target, { compact: true })}</div>
                 </div>
                 <div className="mt-4">
                   <ProgressBar value={c.recovered} max={c.target} color={c.color} />
@@ -114,21 +120,23 @@ export default function BrandDashboard() {
           </div>
           <Link to="/brand/compliance" className="btn-ghost btn-sm">View all <ArrowRight size={12} /></Link>
         </div>
-        <table className="tbl">
-          <thead><tr><th>Drop ID</th><th>Date</th><th>Hub</th><th>Category</th><th>Weight</th><th className="text-right">EPR value</th></tr></thead>
-          <tbody>
-            {data.recentRecoveries.slice(0, 6).map((r: any) => (
-              <tr key={r.id}>
-                <td className="font-mono text-xs">{r.id}</td>
-                <td className="text-textgray">{r.date}</td>
-                <td className="font-bold">{r.hub}</td>
-                <td><span className="inline-flex items-center gap-1.5"><Recycle size={12} className="text-primary" /> {r.category}</span></td>
-                <td className="font-mono">{r.kg.toLocaleString()} kg</td>
-                <td className="text-right"><span className="money">{formatNaira(r.value)}</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="tbl-container">
+          <table className="tbl">
+            <thead><tr><th>Drop ID</th><th>Date</th><th>Hub</th><th>Category</th><th>Weight</th><th className="text-right">EPR value</th></tr></thead>
+            <tbody>
+              {recentRecoveries?.slice(0, 6).map((r: any) => (
+                <tr key={r.id}>
+                  <td className="font-mono text-xs">{r.id}</td>
+                  <td className="text-textgray">{r.date}</td>
+                  <td className="font-bold">{r.hub}</td>
+                  <td><span className="inline-flex items-center gap-1.5"><Recycle size={12} className="text-primary" /> {r.category}</span></td>
+                  <td className="font-mono">{formatNumber(r.kg)} kg</td>
+                  <td className="text-right"><span className="money">{formatNaira(r.value)}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <Modal

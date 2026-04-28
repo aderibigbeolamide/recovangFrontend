@@ -49,40 +49,42 @@ export default function LogisticsDashboard() {
           </div>
           <div className="divide-y divide-bordergray">
             {ACTIVE.map((t) => (
-              <div key={t.id} className="p-6">
+              <div key={t.id} className="p-5 sm:p-6">
                 <div className="flex items-center gap-4">
-                  <div className="grid h-11 w-11 place-items-center rounded-2xl bg-grad-primary text-white">
+                  <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-grad-primary text-white">
                     <Truck size={18} />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-extrabold">{t.id}</span>
-                      <span className="font-mono text-[11px] text-textgray">{t.vehicle}</span>
+                      <span className="font-extrabold truncate">{t.id}</span>
+                      <span className="font-mono text-[10px] text-textgray shrink-0">{t.vehicle}</span>
                     </div>
-                    <div className="text-xs text-textgray">{t.driver} · {t.load}</div>
+                    <div className="text-[11px] text-textgray truncate">{t.driver} · {t.load}</div>
                   </div>
-                  <span className={`badge ${t.progress > 30 ? "badge-success" : "badge-mint"} inline-flex items-center gap-1`}>
+                  <span className={`badge ${t.progress > 30 ? "badge-success" : "badge-mint"} inline-flex items-center gap-1 shrink-0`}>
                     <Clock size={11} /> {t.eta}
                   </span>
                 </div>
 
-                <div className="mt-4 grid grid-cols-[1fr,auto,1fr] items-center gap-3 text-sm">
-                  <div>
+                <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-3">
+                  <div className="flex-1">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">From</div>
-                    <div className="font-extrabold">{t.origin}</div>
+                    <div className="font-extrabold text-sm sm:text-base">{t.origin}</div>
                   </div>
-                  <div className="relative h-8 w-32 sm:w-48">
+                  
+                  <div className="relative h-6 w-full sm:h-8 sm:w-48">
                     <div className="absolute left-0 right-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-charcoal/10" />
                     <div className="absolute left-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-grad-primary" style={{ width: `${t.progress}%` }} />
                     <div className="absolute top-1/2 -translate-y-1/2" style={{ left: `${t.progress}%` }}>
-                      <div className="grid h-7 w-7 place-items-center rounded-full bg-accent text-charcoal shadow-lift">
-                        <Truck size={12} />
+                      <div className="grid h-6 w-6 sm:h-7 sm:w-7 place-items-center rounded-full bg-accent text-charcoal shadow-lift">
+                        <Truck size={11} />
                       </div>
                     </div>
                   </div>
-                  <div className="text-right">
+
+                  <div className="flex-1 text-left sm:text-right">
                     <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">To</div>
-                    <div className="font-extrabold">{t.dest}</div>
+                    <div className="font-extrabold text-sm sm:text-base">{t.dest}</div>
                   </div>
                 </div>
               </div>

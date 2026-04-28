@@ -39,13 +39,13 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="mb-8 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mb-6 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-2xl">
         {eyebrow && <Eyebrow className="mb-3">{eyebrow}</Eyebrow>}
-        <h1 className="text-h1 font-extrabold text-balance">{title}</h1>
-        {subtitle && <p className="mt-2 text-base text-textgray text-pretty">{subtitle}</p>}
+        <h1 className="text-h1 font-extrabold text-balance leading-[1.1]">{title}</h1>
+        {subtitle && <p className="mt-1.5 sm:mt-2 text-sm sm:text-base text-textgray text-pretty">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+      {actions && <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">{actions}</div>}
     </div>
   );
 }
@@ -80,17 +80,17 @@ export function KPICard({
       ? "bg-mint text-primary"
       : "bg-white/15 text-white";
   return (
-    <div className={cn(card, "relative p-5 overflow-hidden")}>
+    <div className={cn(card, "relative p-3.5 sm:p-5 overflow-hidden")}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className={cn("text-[11px] font-bold uppercase tracking-widest", variant === "default" ? "text-textgray" : "text-white/70")}>
             {label}
           </div>
-          <div className={cn("mt-3 font-display text-3xl font-extrabold tabular-nums leading-none", variant === "default" ? "text-charcoal" : "")}>
+          <div className={cn("mt-2 sm:mt-3 font-display text-2xl sm:text-3xl font-extrabold tabular-nums leading-none", variant === "default" ? "text-charcoal" : "")}>
             {value}
           </div>
           {sub && (
-            <div className={cn("mt-2 text-xs font-medium", variant === "default" ? "text-textgray" : "text-white/70")}>{sub}</div>
+            <div className={cn("mt-1.5 sm:mt-2 text-[10px] sm:text-xs font-medium", variant === "default" ? "text-textgray" : "text-white/70")}>{sub}</div>
           )}
         </div>
         {Icon && (
