@@ -1,0 +1,112 @@
+1. Authentication & Onboarding (/auth)
+Method	Endpoint	Description
+POST	/register	Step 1: Unified Registration for all roles
+POST	/onboard/collector	Step 2: Collector-specific data onboarding
+POST	/onboard/business	Step 2: Brand & Factory onboarding
+POST	/onboard/agent	Step 2: Agent onboarding
+POST	/login	Login for all user types
+POST	/logout	Invalidate current session
+POST	/verify-email	Verify account with OTP
+POST	/forgot-password	Request password reset OTP
+POST	/reset-password	Reset password using OTP
+GET	/me	Get current authenticated user profile
+POST	/refresh	Refresh access token
+2. Collector Portal (/collector)
+Method	Endpoint	Description
+GET	/dashboard	Dashboard stats (Earnings, Weight, Streak)
+GET	/profile	Get detailed collector profile
+PUT	/profile	Update collector profile
+POST	/bank-account	Add bank account for withdrawals
+POST	/bank-account/verify	Verify bank account details
+GET	/balance	Get current wallet balance
+GET	/earnings/summary	Earnings by period (weekly/monthly/yearly)
+GET	/earnings/history	Itemized earnings history
+GET	/submissions	List waste collection submissions
+GET	/submissions/:id	Specific submission details
+POST	/submissions	Create new waste submission request
+POST	/submissions/:id/dispute	Dispute a verification result
+GET	/hubs/nearby	Find hubs within 10km radius
+GET	/leaderboard	Top collectors by XP/Points
+GET	/badges	List of earned milestone badges
+GET	/notifications	User notifications list
+PUT	/notifications/:id/read	Mark single notification as read
+PUT	/notifications/read-all	Mark all notifications as read
+GET	/referral	Get referral code and stats
+GET	/streak	Current submission streak data
+POST	/utilities/purchase	Buy airtime/data/bills using balance
+3. Agent Portal (/agent)
+Method	Endpoint	Description
+GET	/dashboard	Agent performance dashboard
+GET	/hub	Assigned hub details
+PUT	/hub/load	Update current hub utilization load
+GET	/submissions/pending	List submissions awaiting verification
+POST	/submissions/:id/verify	Confirm actual weight and pay collector
+POST	/submissions/:id/reject	Reject submission with reason
+PUT	/location	Update agent/mobile hub location
+4. Admin Portal (/admin)
+Method	Endpoint	Description
+GET	/dashboard	Platform-wide KPI analytics
+GET	/analytics/overview	Growth and volume trends
+GET	/analytics/ecosystem	Hub and agent performance metrics
+GET	/waste-by-category	Volume breakdown by waste type
+GET	/revenue-analytics	Revenue and payout analytics
+GET	/collectors	List all collectors
+GET	/collectors/:id	Detailed collector profile
+PUT	/collectors/:id/suspend	Suspend collector account
+PUT	/collectors/:id/unsuspend	Re-activate collector account
+POST	/agents	Create a new collection agent
+GET	/hubs	List all collection hubs
+POST	/hubs	Create a new physical hub
+GET	/submissions	Global submissions list
+GET	/submissions/flagged	Submissions flagged for review
+POST	/payments/bulk-approve	Bulk approve collector payouts
+POST	/pricing	Set regional waste pricing
+POST	/logistics/onboard	Onboard logistics partners
+POST	/hubs/satellite	Onboard satellite/mobile hubs
+GET	/admins	List platform admins (Super Admin only)
+PUT	/admins/:id/permissions	Update admin permissions (Super Admin only)
+5. Brand Portal (/brand)
+Method	Endpoint	Description
+GET	/dashboard	Compliance and recovery dashboard
+GET	/compliance/current	Real-time EPR status tracking
+GET	/recovery/by-category	Recovery data by waste type
+POST	/payments/initiate	Fund the EPR compliance wallet
+GET	/financials	EPR transaction history
+GET	/impact-report/:quarter	Generate sustainability PDF reports
+6. Factory Portal (/factory)
+Method	Endpoint	Description
+GET	/dashboard	Supply/order overview
+GET	/supply	Available waste stock for purchase
+GET	/supply/:categorySlug	Stock for specific waste type
+POST	/orders	Place a waste purchase order
+GET	/orders	Factory order history
+GET	/orders/:id	Specific order details
+PUT	/orders/:id/cancel	Cancel a pending order
+POST	/confirm-receipt	Verify shipment weight on arrival
+7. Global Ecosystem Utilities
+Submissions (/submissions)
+
+POST / : Create new submission (multi-category)
+GET /:id : Get submission detail
+POST /:id/photos : Upload proof photos (Multipart/form-data)
+POST /sync : Sync batch of offline submissions
+Withdrawals (/withdrawals)
+
+GET / : User withdrawal history
+POST /bank : Request bank transfer
+POST /airtime : Request airtime top-up
+POST /bills/:billType : Pay electricity/TV/utility bills
+Waste & Pricing (/waste-categories & /pricing)
+
+GET /waste-categories/ : List categories + pricing
+GET /pricing/ : Current platform standards
+GET /pricing/calculate : Earnings calculator for collectors
+Logistics (/logistics)
+
+PUT /location : Update vehicle GPS
+POST /pickups/request : Request hub evacuation
+POST /pickups/:id/accept : Accept pickup request
+System & Health (/system)
+
+GET /health : Server health check
+GET /ready : Database readiness check
