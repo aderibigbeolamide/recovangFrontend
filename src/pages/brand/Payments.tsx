@@ -6,10 +6,14 @@ import { Modal } from "@/components/Modal";
 import { useBrandDashboard } from "@/hooks/useBrand";
 import { formatNaira, formatNumber } from "@/lib/cn";
 
+import { ReceiptModal } from "@/components/ReceiptModal";
+
 export default function BrandPayments() {
   const { data } = useBrandDashboard();
   const [pay, setPay] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
+
   if (!data) return null;
 
   type Row = typeof data.payments[number];
@@ -19,7 +23,19 @@ export default function BrandPayments() {
     { key: "qtr", header: "Quarter", render: (r) => <span className="badge bg-mint text-primary">{r.quarter}</span>, searchValue: (r) => r.quarter },
     { key: "amount", header: "Amount", className: "text-right font-mono font-extrabold", render: (r) => formatNaira(r.amount) },
     { key: "status", header: "Status", render: (r) => <StatusPill status={r.status === "paid" ? "success" : "pending"} label={r.status} /> },
-    { key: "act", header: "", className: "text-right", render: () => <button className="btn-ghost btn-sm"><Download size={12} /> Receipt</button> },
+    { 
+      key: "act", 
+      header: "", 
+      className: "text-right", 
+      render: (r) => (
+        <button 
+          onClick={() => setSelectedReceipt({ ...r, brand: data.brand })} 
+          className="btn-ghost btn-sm text-primary"
+        >
+          <Download size={12} /> Receipt
+        </button>
+      ) 
+    },
   ];
 
   return (
@@ -97,6 +113,12 @@ export default function BrandPayments() {
           ✓ Reference TX-CCN-{Math.floor(Math.random() * 9000 + 1000)} created.
         </div>
       </Modal>
+
+      <ReceiptModal 
+        open={!!selectedReceipt} 
+        onClose={() => setSelectedReceipt(null)} 
+        data={selectedReceipt} 
+      />
     </>
   );
 }

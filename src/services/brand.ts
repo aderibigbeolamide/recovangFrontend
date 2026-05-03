@@ -19,4 +19,10 @@ export const brandService = {
     
   getImpactReport: (quarter: string) => 
     api.get(`/brand/impact-report/${quarter}`, { responseType: 'blob' }),
+
+  getLeaderboard: () => 
+    api.get("/brand/leaderboard"),
+
+  getSubmission: (id: string) => 
+    api.get(`/submissions/${id}`),
 };

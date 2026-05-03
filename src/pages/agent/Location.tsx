@@ -11,7 +11,13 @@ const HOURS = [
   { d: "Sunday", o: "Closed", c: "Closed" },
 ];
 
+import { useAgentHub } from "@/hooks/useAgent";
+
 export default function AgentLocation() {
+  const { data: hub, isLoading } = useAgentHub();
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading location details...</div>;
+  if (!hub) return <div className="p-20 text-center">Hub not found.</div>;
   return (
     <>
       <PageHeader
@@ -25,34 +31,47 @@ export default function AgentLocation() {
         {/* Map preview */}
         <div className="lg:col-span-7">
           <div className="card overflow-hidden">
-            <div className="relative h-72 bg-grad-mint">
-              <div className="absolute inset-0 bg-grid opacity-50" />
-              <svg viewBox="0 0 400 240" className="absolute inset-0 h-full w-full">
-                <path d="M0 140 C 80 100, 160 200, 240 130 S 380 90, 400 140" stroke="#1A6B3C" strokeOpacity="0.2" strokeWidth="22" fill="none" />
-                <path d="M0 80 C 120 60, 200 150, 320 90 S 400 60, 400 60" stroke="#D4A017" strokeOpacity="0.15" strokeWidth="14" fill="none" />
-              </svg>
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                <div className="relative">
-                  <div className="grid h-12 w-12 place-items-center rounded-full bg-accent text-charcoal shadow-lift">
-                    <Building2 size={20} />
-                  </div>
-                  <div className="absolute -inset-3 animate-pulseRing rounded-full bg-accent/30" />
-                </div>
-              </div>
-              <div className="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold shadow-soft">
-                <MapPin size={11} className="mr-1 inline text-primary" /> 6.4969° N · 3.3489° E
+            <div className="relative h-72 bg-cream">
+              {hub.lat && hub.lng ? (
+                <iframe
+                  title="Hub Location"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  scrolling="no"
+                  marginHeight={0}
+                  marginWidth={0}
+                  src={`https://maps.google.com/maps?q=${hub.lat},${hub.lng}&z=15&output=embed`}
+                  className="grayscale hover:grayscale-0 transition-all duration-700"
+                />
+              ) : (
+                <iframe
+                  title="Hub Location"
+                  width="100%"
+                  height="100%"
+                  frameBorder="0"
+                  scrolling="no"
+                  marginHeight={0}
+                  marginWidth={0}
+                  src={`https://maps.google.com/maps?q=${encodeURIComponent(hub.address + ", " + hub.state)}&z=15&output=embed`}
+                  className="grayscale hover:grayscale-0 transition-all duration-700"
+                />
+              )}
+              
+              <div className="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1.5 text-xs font-bold shadow-soft border border-bordergray">
+                <MapPin size={11} className="mr-1 inline text-primary" /> {hub.lat || "6.5744"}° N · {hub.lng || "3.3615"}° E
               </div>
               <button className="absolute bottom-3 right-3 btn-outline btn-sm bg-white">
-                <Navigation size={12} /> Recenter
+                <Navigation size={12} /> View in Google Maps
               </button>
             </div>
             <div className="grid gap-4 p-6 sm:grid-cols-2">
-              <Field label="Street address" value="12 Bode Thomas Street" />
-              <Field label="Landmark" value="Opposite Methodist Cathedral" />
-              <Field label="Area / LGA" value="Surulere" />
-              <Field label="City" value="Lagos" />
-              <Field label="State" value="Lagos State" />
-              <Field label="Postal code" value="101283" />
+              <Field label="Street address" value={hub.address} />
+              <Field label="Landmark" value={hub.landmark || "N/A"} />
+              <Field label="Area / LGA" value={hub.lga} />
+              <Field label="City" value={hub.city || "Lagos"} />
+              <Field label="State" value={hub.state} />
+              <Field label="Postal code" value={hub.postalCode || ""} />
             </div>
           </div>
 
@@ -83,12 +102,12 @@ export default function AgentLocation() {
           <div className="card p-6">
             <h3 className="text-h4">Public profile</h3>
             <div className="mt-4 space-y-4">
-              <Field label="Hub name" value="Surulere Flagship Hub" />
-              <Field label="Public phone" value="+234 803 555 0182" icon={Phone} />
-              <Field label="WhatsApp" value="+234 803 555 0182" />
+              <Field label="Hub name" value={hub.name} />
+              <Field label="Public phone" value={hub.phone || "+234 800 RECOVANG"} icon={Phone} />
+              <Field label="WhatsApp" value={hub.whatsapp || hub.phone || ""} />
               <div>
                 <label className="label">Description</label>
-                <textarea className="input min-h-[110px] py-3 leading-relaxed" defaultValue="Recovang's flagship Surulere hub. Calibrated digital scales, instant wallet payouts, friendly staff. Walk-ins welcome 7 days a week." />
+                <textarea className="input min-h-[110px] py-3 leading-relaxed" defaultValue={hub.description || `Recovang flagship ${hub.name} hub. Calibrated digital scales, instant wallet payouts, friendly staff.`} />
               </div>
             </div>
           </div>
@@ -109,12 +128,12 @@ export default function AgentLocation() {
 
           <div className="card-dark p-6">
             <div className="text-[10px] font-bold uppercase tracking-widest text-accent">Public listing preview</div>
-            <h4 className="mt-2 text-h4 text-white">Surulere Flagship Hub</h4>
-            <p className="mt-1 text-sm text-white/70">12 Bode Thomas, Surulere · 0.4 km away</p>
+            <h4 className="mt-2 text-h4 text-white">{hub.name}</h4>
+            <p className="mt-1 text-sm text-white/70">{hub.address} · {hub.lat}, {hub.lng}</p>
             <div className="mt-4 flex flex-wrap gap-2 text-xs">
               <span className="rounded-full bg-success/15 px-3 py-1 font-bold text-success">Low queue</span>
               <span className="rounded-full bg-white/10 px-3 py-1 font-bold text-white">★ 4.9</span>
-              <span className="rounded-full bg-white/10 px-3 py-1 font-bold text-white"><Clock size={11} className="inline" /> 7am–7pm</span>
+              <span className="rounded-full bg-white/10 px-3 py-1 font-bold text-white"><Clock size={11} className="inline" /> {hub.openTime}</span>
             </div>
           </div>
         </div>

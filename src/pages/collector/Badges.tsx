@@ -24,70 +24,75 @@ const BADGES = [
   { name: "Carbon hero", icon: Leaf, tier: "Platinum", earned: false, progress: 18, desc: "Saved 1 tonne of CO₂" },
 ];
 
+import { useBadges } from "@/hooks/useCollector";
+
 export default function CollectorBadges() {
-  const earned = BADGES.filter((b) => b.earned).length;
+  const { data: earnedBadges, isLoading } = useBadges();
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading badges...</div>;
+
+  const earnedCount = earnedBadges?.length || 0;
+
   return (
     <>
       <PageHeader
         eyebrow="Badges & achievements"
         title="Your recycling milestones"
-        subtitle={`You've unlocked ${earned} of ${BADGES.length} badges. Keep dropping to climb the tiers.`}
+        subtitle={`You've unlocked ${earnedCount} badges. Keep dropping to climb the tiers.`}
       />
 
       {/* Tier strip */}
       <div className="card overflow-hidden p-2">
         <div className="grid gap-2 sm:grid-cols-5">
-          {TIERS.map((t) => (
-            <div key={t.name} className={`relative overflow-hidden rounded-2xl p-5 ${t.current ? "ring-2 ring-accent" : ""}`}>
-              <div className={`absolute inset-0 bg-gradient-to-br ${t.color} opacity-15`} />
-              <div className="relative">
-                <div className={`text-[10px] font-bold uppercase tracking-widest ${t.text}`}>{t.name} tier</div>
-                <div className="mt-1 font-display text-2xl font-extrabold text-charcoal">{t.count}</div>
-                <div className="text-[11px] text-textgray">badges earned</div>
-                {t.current && <span className="absolute right-2 top-2 badge-gold">Current</span>}
+          {TIERS.map((t) => {
+            const count = earnedBadges?.filter((b: any) => b.type === t.name.toUpperCase() || b.tier === t.name).length || 0;
+            return (
+              <div key={t.name} className={`relative overflow-hidden rounded-2xl p-5 ${t.current ? "ring-2 ring-accent" : ""}`}>
+                <div className={`absolute inset-0 bg-gradient-to-br ${t.color} opacity-15`} />
+                <div className="relative">
+                  <div className={`text-[10px] font-bold uppercase tracking-widest ${t.text}`}>{t.name} tier</div>
+                  <div className="mt-1 font-display text-2xl font-extrabold text-charcoal">{count}</div>
+                  <div className="text-[11px] text-textgray">badges earned</div>
+                  {t.current && <span className="absolute right-2 top-2 badge-gold">Current</span>}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
       {/* Grid */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {BADGES.map((b) => {
-          const tier = TIERS.find((t) => t.name === b.tier)!;
+        {earnedBadges?.map((b: any) => {
+          const tier = TIERS.find((t) => t.name.toUpperCase() === b.type) || TIERS[0];
           return (
-            <div key={b.name} className={`card p-6 ${b.earned ? "" : "opacity-90"}`}>
+            <div key={b.id} className="card p-6 animate-lift">
               <div className="flex items-start gap-4">
-                <div className={`relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br ${tier.color} text-white shadow-lift ${!b.earned && "grayscale"}`}>
-                  <b.icon size={26} />
-                  {!b.earned && <div className="absolute -bottom-1 -right-1 grid h-6 w-6 place-items-center rounded-full bg-charcoal text-accent"><Lock size={11} /></div>}
+                <div className={`relative grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br ${tier.color} text-white shadow-lift`}>
+                  {b.iconUrl ? <img src={b.iconUrl} className="w-8 h-8 object-contain" /> : <Award size={26} />}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-base font-extrabold">{b.name}</span>
-                    <span className={`badge bg-charcoal/8 ${tier.text}`}>{b.tier}</span>
+                    <span className={`badge bg-charcoal/8 ${tier.text}`}>{b.type}</span>
                   </div>
-                  <p className="mt-1 text-sm text-textgray">{b.desc}</p>
+                  <p className="mt-1 text-sm text-textgray">{b.description}</p>
                 </div>
               </div>
-              {b.earned ? (
-                <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-success-50 px-3 py-1 text-xs font-bold text-success">
-                  <BadgeCheck size={12} /> Earned · April 2026
-                </div>
-              ) : (
-                <div className="mt-5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-textgray">Progress</span>
-                    <span className="font-mono font-extrabold text-charcoal">{b.progress}%</span>
-                  </div>
-                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-charcoal/8">
-                    <div className={`h-full rounded-full bg-gradient-to-r ${tier.color}`} style={{ width: `${b.progress}%` }} />
-                  </div>
-                </div>
-              )}
+              <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-success-50 px-3 py-1 text-xs font-bold text-success">
+                <BadgeCheck size={12} /> Awarded · {new Date(b.awardedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </div>
             </div>
-          );
+            );
         })}
+        {(!earnedBadges || earnedBadges.length === 0) && (
+          <div className="col-span-full p-20 text-center card border-dashed">
+            <Lock size={48} className="mx-auto mb-4 text-textgray opacity-20" />
+            <h3 className="text-h4">No badges earned yet</h3>
+            <p className="text-textgray mt-2">Start dropping waste to unlock your first milestone!</p>
+            <button className="btn-primary mt-6" onClick={() => window.location.href='/collector/submit'}>Submit waste</button>
+          </div>
+        )}
       </div>
     </>
   );

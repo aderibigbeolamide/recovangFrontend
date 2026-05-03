@@ -4,27 +4,20 @@ import { AreaChart, BarChart, Donut } from "@/components/charts";
 import { formatNaira } from "@/lib/cn";
 import { Coins, Package, Recycle, Users } from "lucide-react";
 
-const ROWS = [
-  { date: "Apr 24", drops: 184, kg: 642, paid: 88400, comm: 14820 },
-  { date: "Apr 23", drops: 162, kg: 584, paid: 79200, comm: 13280 },
-  { date: "Apr 22", drops: 178, kg: 612, paid: 84600, comm: 14180 },
-  { date: "Apr 21", drops: 143, kg: 521, paid: 71400, comm: 11960 },
-  { date: "Apr 20", drops: 156, kg: 548, paid: 76200, comm: 12780 },
-  { date: "Apr 19", drops: 188, kg: 668, paid: 92400, comm: 15490 },
-  { date: "Apr 18", drops: 171, kg: 598, paid: 82100, comm: 13760 },
-];
-
-const WEEKLY = [
-  { label: "Apr 18", value: 598 },
-  { label: "Apr 19", value: 668 },
-  { label: "Apr 20", value: 548 },
-  { label: "Apr 21", value: 521 },
-  { label: "Apr 22", value: 612 },
-  { label: "Apr 23", value: 584 },
-  { label: "Apr 24", value: 642 },
-];
+import { useAgentReports } from "@/hooks/useAgent";
 
 export default function AgentReports() {
+  const { data, isLoading } = useAgentReports();
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading reports...</div>;
+
+  const ROWS = data?.ledger || [];
+  const stats = data?.summary || { drops: 0, volume: 0, payouts: 0, commission: 0 };
+
+  const WEEKLY = ROWS.slice(0, 7).reverse().map((r: any) => ({
+    label: new Date(r.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    value: r.volume
+  }));
   return (
     <>
       <PageHeader
@@ -51,10 +44,10 @@ export default function AgentReports() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="Drops this week" value="1,182" sub="+ 14% vs last week" icon={Package} variant="primary" trend={{ value: "+14%", direction: "up" }} />
-        <KPICard label="KG recovered" value="4,173 kg" sub="4.17 tonnes" icon={Recycle} />
-        <KPICard label="Paid to collectors" value={formatNaira(574400)} sub="Avg ₦486/drop" icon={Coins} variant="gold" />
-        <KPICard label="Hub commission" value={formatNaira(96270)} sub="6% of payouts" icon={Users} variant="dark" />
+        <KPICard label="Drops this period" value={stats.drops} sub="Total verified drops" icon={Package} variant="primary" />
+        <KPICard label="KG recovered" value={`${Math.round(stats.volume)} kg`} sub={`${(stats.volume / 1000).toFixed(2)} tonnes`} icon={Recycle} />
+        <KPICard label="Paid to collectors" value={formatNaira(stats.payouts)} sub={`Avg ${formatNaira(stats.drops > 0 ? stats.payouts / stats.drops : 0)}/drop`} icon={Coins} variant="gold" />
+        <KPICard label="Hub commission" value={formatNaira(stats.commission)} sub="6% of payouts" icon={Users} variant="dark" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
@@ -101,22 +94,22 @@ export default function AgentReports() {
             <tr><th>Date</th><th>Drops</th><th>KG recovered</th><th>Paid out</th><th className="text-right">Hub commission</th><th>Status</th></tr>
           </thead>
           <tbody>
-            {ROWS.map((r, i) => (
+            {ROWS.map((r: any, i: number) => (
               <tr key={i}>
-                <td className="font-bold">{r.date}, 2026</td>
+                <td className="font-bold">{new Date(r.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                 <td className="font-mono">{r.drops}</td>
-                <td className="font-mono">{r.kg} kg</td>
-                <td className="font-mono">{formatNaira(r.paid)}</td>
-                <td className="text-right"><span className="money">{formatNaira(r.comm)}</span></td>
-                <td><span className="badge-success">Submitted</span></td>
+                <td className="font-mono">{Math.round(r.volume)} kg</td>
+                <td className="font-mono">{formatNaira(r.payouts)}</td>
+                <td className="text-right"><span className="money">{formatNaira(r.commission)}</span></td>
+                <td><span className="badge-success">Verified</span></td>
               </tr>
             ))}
             <tr className="bg-cream/50 font-extrabold">
               <td>Total</td>
-              <td className="font-mono">1,182</td>
-              <td className="font-mono">4,173 kg</td>
-              <td className="font-mono">{formatNaira(574400)}</td>
-              <td className="text-right money text-accent-700">{formatNaira(96270)}</td>
+              <td className="font-mono">{stats.drops}</td>
+              <td className="font-mono">{Math.round(stats.volume)} kg</td>
+              <td className="font-mono">{formatNaira(stats.payouts)}</td>
+              <td className="text-right money text-accent-700">{formatNaira(stats.commission)}</td>
               <td>—</td>
             </tr>
           </tbody>

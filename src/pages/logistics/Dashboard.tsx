@@ -15,13 +15,29 @@ const DAILY = [
   { label: "T", value: 7 }, { label: "F", value: 8 }, { label: "S", value: 9 }, { label: "S", value: 6 },
 ];
 
+import { useLogisticsDashboard } from "@/hooks/useLogistics";
+
 export default function LogisticsDashboard() {
+  const { data, isLoading } = useLogisticsDashboard();
+
+  if (isLoading || !data) return <div className="p-20 text-center font-bold">Loading dashboard...</div>;
+
+  const isApproved = data.isApproved;
+  const activePickups = isApproved ? data.pickups.active : [];
+  const openPickups = isApproved ? data.pickups.open : [];
+  const tonnage = isApproved ? data.stats.tonnage : 0;
+  const revenue = isApproved ? data.stats.revenue : 0;
+  const trips = isApproved ? data.stats.trips : 0;
+
   return (
     <>
       <PageHeader
-        eyebrow="Logistics partner · GreenWheels Nigeria"
-        title="Welcome back, Tunde."
-        subtitle="3 trucks on the road. 4 pickups pending. Avg fuel cost down 8% this week."
+        eyebrow={`Logistics partner · ${isApproved ? data.stats.rating : 5.0} rating`}
+        title={`Welcome back.`}
+        subtitle={isApproved 
+            ? `${activePickups.length} trucks on the road. ${openPickups.length} pickups pending.`
+            : "Your account is currently under review. Please complete your KYC to begin."
+        }
         actions={
           <>
             <Link to="/logistics/fleet" className="btn-outline"><Truck size={14} /> Fleet</Link>
@@ -31,10 +47,10 @@ export default function LogisticsDashboard() {
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="Active pickups" value="3" sub="Out of 8 trucks" icon={Truck} variant="primary" />
-        <KPICard label="Today's tonnage" value="14.2 t" sub="+ 22% vs yesterday" icon={Package} trend={{ value: "+22%", direction: "up" }} />
-        <KPICard label="Today's revenue" value={formatNaira(248400)} sub="₦35–₦65 / km tier" icon={Coins} variant="gold" />
-        <KPICard label="On-time rate" value="96%" sub="Top 5% partner" icon={Clock} variant="dark" />
+        <KPICard label="Active pickups" value={activePickups.length} sub="Real-time dispatch" icon={Truck} variant="primary" />
+        <KPICard label="Total tonnage" value={`${tonnage} t`} sub="Life-time volume" icon={Package} />
+        <KPICard label="Total revenue" value={formatNaira(revenue)} sub="Earnings to date" icon={Coins} variant="gold" />
+        <KPICard label="Trips completed" value={trips} sub="Reliable partner" icon={Clock} variant="dark" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
@@ -48,8 +64,10 @@ export default function LogisticsDashboard() {
             <Link to="/logistics/pickups" className="text-sm font-bold text-primary">All pickups <ArrowRight size={12} className="inline" /></Link>
           </div>
           <div className="divide-y divide-bordergray">
-            {ACTIVE.map((t) => (
-              <div key={t.id} className="p-5 sm:p-6">
+            {activePickups.length === 0 ? (
+                <div className="p-20 text-center text-textgray">No active trips at the moment.</div>
+            ) : activePickups.map((t: any) => (
+              <div key={t.fullId} className="p-5 sm:p-6">
                 <div className="flex items-center gap-4">
                   <div className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-grad-primary text-white">
                     <Truck size={18} />
@@ -59,10 +77,10 @@ export default function LogisticsDashboard() {
                       <span className="font-extrabold truncate">{t.id}</span>
                       <span className="font-mono text-[10px] text-textgray shrink-0">{t.vehicle}</span>
                     </div>
-                    <div className="text-[11px] text-textgray truncate">{t.driver} · {t.load}</div>
+                    <div className="text-[11px] text-textgray truncate">{t.driver} · {t.weight} {t.cat}</div>
                   </div>
-                  <span className={`badge ${t.progress > 30 ? "badge-success" : "badge-mint"} inline-flex items-center gap-1 shrink-0`}>
-                    <Clock size={11} /> {t.eta}
+                  <span className="badge badge-success inline-flex items-center gap-1 shrink-0">
+                    <Clock size={11} /> {t.window}
                   </span>
                 </div>
 
@@ -97,16 +115,18 @@ export default function LogisticsDashboard() {
           <div className="card-dark p-6">
             <div className="text-[10px] font-bold uppercase tracking-widest text-accent">Fleet utilisation</div>
             <div className="mt-4 flex items-center gap-5">
-              <ProgressRing value={62} color="#D4A017" label="utilised" />
+              <ProgressRing value={isApproved ? 62 : 0} color="#D4A017" label="utilised" />
               <div className="flex-1">
-                <div className="font-display text-2xl font-extrabold text-white">5 / 8 active</div>
-                <p className="mt-1 text-xs text-white/70">3 trucks idle. Schedule pickups to push above 80%.</p>
+                <div className="font-display text-2xl font-extrabold text-white">{isApproved ? "5 / 8" : "0 / 0"} active</div>
+                <p className="mt-1 text-xs text-white/70">
+                    {isApproved ? "3 trucks idle. Schedule pickups to push above 80%." : "No vehicles registered yet."}
+                </p>
               </div>
             </div>
           </div>
 
-          <KPICard label="Avg fuel / 100km" value="14.2 L" sub="-8% vs last week" icon={Fuel} variant="primary" />
-          <KPICard label="Avg load weight" value="2.4 t" sub="78% of capacity" icon={Package} variant="gold" />
+          <KPICard label="Avg fuel / 100km" value={isApproved ? "14.2 L" : "0 L"} sub={isApproved ? "-8% vs last week" : "Awaiting data"} icon={Fuel} variant="primary" />
+          <KPICard label="Avg load weight" value={isApproved ? "2.4 t" : "0 t"} sub={isApproved ? "78% of capacity" : "Awaiting data"} icon={Package} variant="gold" />
         </div>
       </div>
 
@@ -114,16 +134,16 @@ export default function LogisticsDashboard() {
         <div className="card p-6 lg:col-span-7">
           <div className="flex items-center justify-between">
             <h3 className="text-h4">Pickups completed</h3>
-            <span className="badge bg-cream text-textgray">Last 7 days</span>
+            <span className="badge bg-cream text-textgray">{isApproved ? "Last 7 days" : "Awaiting approval"}</span>
           </div>
           <div className="mt-5">
-            <BarChart data={DAILY} height={180} barColor="#1A6B3C" />
+            <BarChart data={isApproved ? DAILY : []} height={180} barColor="#1A6B3C" />
           </div>
         </div>
         <div className="card p-6 lg:col-span-5">
           <h3 className="text-h4">Top routes this week</h3>
           <div className="mt-5 space-y-3">
-            {[
+            {isApproved ? [
               { from: "Surulere", to: "Ikorodu", trips: 12, rev: 84000 },
               { from: "Yaba", to: "Apapa", trips: 9, rev: 68400 },
               { from: "Lekki", to: "Ikorodu", trips: 7, rev: 91200 },
@@ -139,7 +159,9 @@ export default function LogisticsDashboard() {
                 </div>
                 <span className="money">{formatNaira(r.rev)}</span>
               </div>
-            ))}
+            )) : (
+                <div className="p-10 text-center text-textgray italic">Route analysis will be available once approved.</div>
+            )}
           </div>
         </div>
       </div>

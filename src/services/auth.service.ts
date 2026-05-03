@@ -38,7 +38,9 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
     ...data.user,
     name: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || "User",
     avatarLetters: (data.user.firstName?.[0] || "") + (data.user.lastName?.[0] || ""),
-    role: (data.user.role || "").toLowerCase()
+    role: (data.user.role || "").toLowerCase(),
+    isApproved: data.user.isApproved || false,
+    kycStatus: data.user.kycStatus || "PENDING"
   };
 
   return { 
@@ -67,18 +69,33 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
       email: payload.email,
       phone: payload.phone,
       role: payload.role,
+      isApproved: false,
+      kycStatus: "PENDING",
       avatarLetters: (payload.firstName[0] || "?") + (payload.lastName[0] || ""),
     };
     return delay({ user, token: `demo.token.${user.role}` });
   }
-  const { data: res } = await api.post("/auth/register", payload);
+
+  // Map to backend DTO (phoneNumber and uppercase role)
+  const backendPayload = {
+    firstName: payload.firstName,
+    lastName: payload.lastName,
+    email: payload.email,
+    phoneNumber: payload.phone,
+    password: payload.password,
+    role: payload.role.toUpperCase()
+  };
+
+  const { data: res } = await api.post("/auth/register", backendPayload);
   const data = res.data ?? res;
   
   const user = {
     ...data.user,
     name: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || "User",
     avatarLetters: (data.user.firstName?.[0] || "") + (data.user.lastName?.[0] || ""),
-    role: (data.user.role || "").toLowerCase()
+    role: (data.user.role || "").toLowerCase(),
+    isApproved: data.user.isApproved || false,
+    kycStatus: data.user.kycStatus || "PENDING"
   };
 
   return { 
@@ -136,4 +153,23 @@ export async function verifyEmail(payload: { email: string; code: string }): Pro
   }
   await api.post("/auth/verify-email", payload);
   return { ok: true };
+}
+
+export async function googleLogin(idToken: string): Promise<AuthResponse> {
+  const { data: res } = await api.post("/auth/google", { idToken });
+  const data = res.data ?? res;
+  
+  const user = {
+    ...data.user,
+    name: `${data.user.firstName || ""} ${data.user.lastName || ""}`.trim() || "User",
+    avatarLetters: (data.user.firstName?.[0] || "") + (data.user.lastName?.[0] || ""),
+    role: (data.user.role || "collector").toLowerCase(),
+    isApproved: data.user.isApproved || false,
+    kycStatus: data.user.kycStatus || "PENDING"
+  };
+
+  return { 
+    user, 
+    token: data.accessToken || data.token || data.access_token 
+  };
 }

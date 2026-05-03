@@ -3,36 +3,29 @@ import { KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { ProgressBar, AreaChart } from "@/components/charts";
 import { formatNaira, formatNumber } from "@/lib/cn";
 
-const XP_HISTORY = [
-  { label: "M", value: 220 },
-  { label: "T", value: 340 },
-  { label: "W", value: 180 },
-  { label: "T", value: 420 },
-  { label: "F", value: 380 },
-  { label: "S", value: 480 },
-  { label: "S", value: 320 },
-];
+import { useAgentXp } from "@/hooks/useAgent";
 
 const PAYOUTS = [
-  { period: "Apr 2026 (current)", drops: 4218, comm: 88420, bonus: 12500, status: "in-progress" },
-  { period: "Mar 2026", drops: 4892, comm: 96440, bonus: 18200, status: "paid" },
-  { period: "Feb 2026", drops: 4106, comm: 81920, bonus: 14600, status: "paid" },
-  { period: "Jan 2026", drops: 3821, comm: 76800, bonus: 9400, status: "paid" },
-  { period: "Dec 2025", drops: 4624, comm: 92100, bonus: 22000, status: "paid" },
+  { period: "Apr 2026 (current)", drops: 0, comm: 0, bonus: 0, status: "in-progress" },
 ];
 
-const TIERS = [
+const TIERS_LIST = [
   { name: "Sprout", min: 0, max: 1000, color: "from-emerald-300 to-emerald-500" },
   { name: "Verifier", min: 1000, max: 5000, color: "from-primary to-primary-700" },
-  { name: "Steward", min: 5000, max: 12000, color: "from-accent to-accent-700", current: true },
+  { name: "Steward", min: 5000, max: 12000, color: "from-accent to-accent-700" },
   { name: "Champion", min: 12000, max: 30000, color: "from-orange-400 to-orange-600" },
   { name: "Legend", min: 30000, max: 100000, color: "from-charcoal to-charcoal-700" },
 ];
 
 export default function AgentXpEarnings() {
-  const xp = 8420;
-  const tier = TIERS.find((t) => t.current)!;
-  const pct = ((xp - tier.min) / (tier.max - tier.min)) * 100;
+  const { data, isLoading } = useAgentXp();
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading rewards...</div>;
+
+  const xp = data?.xp || 0;
+  const tier = data?.tier || { name: "Sprout", min: 0, max: 1000 };
+  const pct = ((xp - tier.min) / (Math.max(1, tier.max - tier.min))) * 100;
+  const XP_HISTORY = data?.history || [];
 
   return (
     <>
@@ -43,38 +36,42 @@ export default function AgentXpEarnings() {
       />
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <KPICard label="Total XP" value={formatNumber(xp)} sub="Steward tier" icon={Sparkles} variant="gold" />
-        <KPICard label="Lifetime commission" value="₦1.84M" sub="Across 18 months" icon={Coins} variant="primary" />
-        <KPICard label="This month" value="₦100,920" sub="+ 12% vs last mo" icon={TrendingUp} trend={{ value: "+12%", direction: "up" }} />
-        <KPICard label="Active rank" value="#12 / 412" sub="Top 3% in Lagos" icon={Trophy} variant="dark" />
+        <KPICard label="Total XP" value={formatNumber(xp)} sub={`${tier.name} tier`} icon={Sparkles} variant="gold" />
+        <KPICard label="Lifetime commission" value={formatNaira(data?.lifetimeEarnings || 0)} sub="Total verified earnings" icon={Coins} variant="primary" />
+        <KPICard label="This month" value={formatNaira(data?.thisMonthEarnings || 0)} sub="Pending next payout" icon={TrendingUp} />
+        <KPICard label="Active rank" value={`#${data?.rank || 0} / ${data?.totalAgents || 0}`} sub="Platform wide" icon={Trophy} variant="dark" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         {/* Tier card */}
         <div className="card-dark p-7 lg:col-span-7">
           <div className="text-[10px] font-bold uppercase tracking-widest text-accent">Current tier</div>
-          <h2 className="mt-2 font-display text-3xl font-extrabold text-white">Steward · Level 3</h2>
-          <p className="mt-2 text-sm text-white/70">8,420 / 12,000 XP to next tier (Champion · 9% commission unlocked)</p>
+          <h2 className="mt-2 font-display text-3xl font-extrabold text-white">{tier.name} · Level {tier.name === "Sprout" ? 1 : tier.name === "Verifier" ? 2 : 3}</h2>
+          <p className="mt-2 text-sm text-white/70">{formatNumber(xp)} / {formatNumber(tier.max)} XP to next tier</p>
 
           <div className="mt-6 space-y-3">
-            {TIERS.map((t) => (
-              <div key={t.name} className={`flex items-center gap-3 ${t.current ? "" : "opacity-50"}`}>
-                <div className={`grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br ${t.color} text-white shadow-lift`}>
-                  {t.current ? <Crown size={14} /> : <Star size={14} />}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-extrabold text-white">{t.name}</span>
-                    <span className="font-mono text-xs text-white/60">{formatNumber(t.min)} – {formatNumber(t.max)} XP</span>
+            {TIERS_LIST.map((t) => {
+              const isCurrent = t.name === tier.name;
+              const isLocked = t.min >= tier.max;
+              return (
+                <div key={t.name} className={`flex items-center gap-3 ${isCurrent ? "" : "opacity-50"}`}>
+                  <div className={`grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br ${t.color} text-white shadow-lift`}>
+                    {isCurrent ? <Crown size={14} /> : isLocked ? <Zap size={14} className="opacity-30" /> : <Star size={14} />}
                   </div>
-                  {t.current && (
-                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
-                      <div className="h-full rounded-full bg-grad-gold" style={{ width: `${pct}%` }} />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-extrabold text-white">{t.name}</span>
+                      <span className="font-mono text-xs text-white/60">{formatNumber(t.min)} – {formatNumber(t.max)} XP</span>
                     </div>
-                  )}
+                    {isCurrent && (
+                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
+                        <div className="h-full rounded-full bg-grad-gold" style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

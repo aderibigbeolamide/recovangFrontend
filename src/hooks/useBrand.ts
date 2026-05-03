@@ -55,11 +55,38 @@ export function useBrandDashboard() {
       if (USE_MOCK) return MOCK_DASHBOARD;
       try {
         const res = await brandService.getDashboard();
-        return res.data;
+        const payload = res.data as any;
+        return payload.data ?? payload;
       } catch {
         return MOCK_DASHBOARD;
       }
     },
     staleTime: 60_000,
+  });
+}
+
+export function useBrandLeaderboard() {
+  return useQuery({
+    queryKey: ["brand", "leaderboard"],
+    queryFn: async () => {
+      try {
+        const res = await brandService.getLeaderboard();
+        return res.data.data ?? res.data;
+      } catch {
+        return [];
+      }
+    },
+  });
+}
+
+export function useSubmissionDetails(id: string | null) {
+  return useQuery({
+    queryKey: ["submission", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const res = await brandService.getSubmission(id);
+      return res.data.data ?? res.data;
+    },
+    enabled: !!id,
   });
 }

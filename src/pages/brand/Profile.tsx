@@ -15,6 +15,7 @@ export default function BrandProfile() {
     email: user?.email ?? "compliance@coca-cola.ng",
     website: "https://coca-cola.com/africa",
     primaryContact: user?.name ?? "Chioma Okeke",
+    publicSlug: user?.company?.toLowerCase().replace(/\s+/g, '-') ?? "coca-cola",
   });
 
   function save() {
@@ -43,6 +44,27 @@ export default function BrandProfile() {
             </div>
           </div>
           <button className="btn-outline mt-4 w-full"><Camera size={14} /> Upload logo</button>
+
+          <div className="mt-8 border-t border-bordergray pt-6">
+            <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Consumer Impact QR</div>
+            <div className="mt-4 rounded-3xl bg-white border border-bordergray p-6 text-center">
+                <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${window.location.origin}/impact/${form.publicSlug}`} 
+                    alt="Impact QR"
+                    className="mx-auto h-40 w-40 rounded-xl"
+                />
+                <p className="mt-4 text-[10px] font-bold text-textgray uppercase tracking-widest">Scan to verify impact</p>
+                <button 
+                  onClick={() => window.open(`https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&data=${window.location.origin}/impact/${form.publicSlug}`)}
+                  className="btn-ghost btn-sm mt-3 w-full text-primary"
+                >
+                  Download HQ Print QR
+                </button>
+            </div>
+            <p className="mt-4 text-[11px] leading-relaxed text-textgray italic">
+                Print this QR code on your product labels to let consumers verify your sustainability impact in real-time.
+            </p>
+          </div>
         </div>
 
         <div className="card p-6 lg:col-span-8">
@@ -56,6 +78,7 @@ export default function BrandProfile() {
             <Field label="Compliance email" icon={Mail}><input className="input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Field>
             <Field label="Primary contact"><input className="input" value={form.primaryContact} onChange={(e) => setForm({ ...form, primaryContact: e.target.value })} /></Field>
             <Field label="Phone" icon={Phone}><input className="input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></Field>
+            <Field label="Public impact URL"><div className="flex items-center gap-1.5 font-mono text-xs"><span className="text-textgray">/impact/</span><input className="input h-8 py-0" value={form.publicSlug} onChange={(e) => setForm({ ...form, publicSlug: e.target.value })} /></div></Field>
           </div>
           {saved && <div className="mt-4 rounded-xl bg-success-50 px-4 py-2 text-sm font-bold text-success">✓ Profile saved</div>}
         </div>

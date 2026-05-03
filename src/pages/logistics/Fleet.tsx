@@ -20,30 +20,51 @@ const STATUS: Record<string, { c: string; l: string }> = {
   maintenance: { c: "error", l: "In maintenance" },
 };
 
+import { useLogisticsDashboard } from "@/hooks/useLogistics";
+
 export default function LogisticsFleet() {
+  const { data, isLoading } = useLogisticsDashboard();
+
+  if (isLoading || !data) return <div className="p-20 text-center font-bold">Loading fleet...</div>;
+
+  const isApproved = data.isApproved;
+
   return (
     <>
       <PageHeader
         eyebrow="Fleet"
-        title="Your fleet · 8 vehicles"
+        title={`Your fleet · ${isApproved ? "8" : "0"} vehicles`}
         subtitle="Manage trucks, drivers, fuel and service schedules. Live status pulled from your in-cab telemetry units."
         actions={
           <>
             <button className="btn-outline"><Calendar size={14} /> Maintenance schedule</button>
-            <button className="btn-primary"><Plus size={14} /> Add vehicle</button>
+            <button className="btn-primary" disabled={!isApproved}><Plus size={14} /> Add vehicle</button>
           </>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <KPICard label="Total vehicles" value="8" sub="22 tonnes capacity" icon={Truck} variant="primary" />
-        <KPICard label="On the road" value="3" sub="62% utilisation" icon={MapPin} variant="dark" />
-        <KPICard label="Maintenance due" value="2" sub="1 overdue" icon={Wrench} variant="gold" />
-        <KPICard label="Avg fuel" value="58%" sub="Refuel needed: 2" icon={Fuel} />
+        <KPICard label="Total vehicles" value={isApproved ? "8" : "0"} sub={isApproved ? "22 tonnes capacity" : "Pending approval"} icon={Truck} variant="primary" />
+        <KPICard label="On the road" value={isApproved ? "3" : "0"} sub={isApproved ? "62% utilisation" : "Awaiting data"} icon={MapPin} variant="dark" />
+        <KPICard label="Maintenance due" value={isApproved ? "2" : "0"} sub={isApproved ? "1 overdue" : "All systems go"} icon={Wrench} variant="gold" />
+        <KPICard label="Avg fuel" value={isApproved ? "58%" : "0%"} sub={isApproved ? "Refuel needed: 2" : "No active units"} icon={Fuel} />
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {TRUCKS.map((t) => {
+        {!isApproved ? (
+            <div className="col-span-full card p-20 text-center">
+                <div className="h-16 w-16 rounded-3xl bg-cream flex items-center justify-center text-primary mx-auto mb-5">
+                    <Truck size={32} />
+                </div>
+                <h3 className="text-xl font-black">Fleet access pending</h3>
+                <p className="mt-2 text-textgray max-w-md mx-auto leading-relaxed">
+                    Once your account is approved, you'll be able to register your vehicles, assign drivers, and track your fleet's live performance.
+                </p>
+                <div className="mt-8 flex justify-center gap-3">
+                    <button className="btn-primary" disabled>Complete KYC First</button>
+                </div>
+            </div>
+        ) : TRUCKS.map((t) => {
           const s = STATUS[t.status];
           const overdue = t.service === "OVERDUE";
           return (

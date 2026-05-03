@@ -6,18 +6,13 @@ import { Sparkline } from "@/components/charts";
 import { formatNaira } from "@/lib/cn";
 import { Coins, TrendingUp } from "lucide-react";
 
-const TX = [
-  { id: "TX-9281", type: "in", label: "PET drop · Surulere Hub", date: "Apr 24, 10:42", amt: 840, status: "completed" },
-  { id: "TX-9275", type: "out", label: "Withdraw to GTBank ****8821", date: "Apr 23, 18:02", amt: -10000, status: "completed" },
-  { id: "TX-9272", type: "out", label: "MTN airtime ·  ****1129", date: "Apr 23, 14:55", amt: -1000, status: "completed" },
-  { id: "TX-9268", type: "in", label: "Cardboard drop · Surulere Hub", date: "Apr 22, 14:18", amt: 480, status: "completed" },
-  { id: "TX-9261", type: "in", label: "Streak bonus · 14 days", date: "Apr 22, 09:00", amt: 500, status: "completed" },
-  { id: "TX-9255", type: "out", label: "Eko Disco bill payment", date: "Apr 20, 19:30", amt: -3500, status: "completed" },
-  { id: "TX-9248", type: "in", label: "Aluminium drop · Yaba Centre", date: "Apr 19, 09:08", amt: 660, status: "completed" },
-];
+import { useWallet } from "@/hooks/useCollector";
 
 export default function CollectorWallet() {
   const [hide, setHide] = useState(false);
+  const { data, isLoading } = useWallet();
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading wallet...</div>;
 
   return (
     <>
@@ -34,15 +29,15 @@ export default function CollectorWallet() {
               <div className="text-[10px] font-bold uppercase tracking-widest text-accent">Available balance</div>
               <div className="mt-2 flex items-baseline gap-3">
                 <div className="font-mono text-4xl font-extrabold text-white sm:text-5xl">
-                  <span className="text-accent">₦</span>{hide ? "•••••" : "48,750"}
+                  <span className="text-accent">₦</span>{hide ? "•••••" : (data?.balance / 100).toLocaleString()}
                 </div>
                 <button onClick={() => setHide(!hide)} className="text-white/50 hover:text-white">
                   {hide ? <Eye size={16} /> : <EyeOff size={16} />}
                 </button>
               </div>
-              <div className="mt-1 text-xs text-white/60">≈ $32.50 USD</div>
+              <div className="mt-1 text-xs text-white/60">≈ ${(data?.balance / 100 / 1500).toFixed(2)} USD</div>
             </div>
-            <span className="badge bg-success/15 text-success">+ ₦12,400 this week</span>
+            <span className="badge bg-success/15 text-success">+ ₦{(data?.balance / 100).toLocaleString()} current</span>
           </div>
 
           <div className="mt-6">
@@ -63,10 +58,10 @@ export default function CollectorWallet() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:col-span-7 lg:grid-cols-2">
-          <KPICard label="Lifetime earned" value="₦312,400" sub="Since Aug 2024" icon={Coins} variant="gold" />
-          <KPICard label="This month" value="₦42,180" sub="+ 28% vs last mo" icon={TrendingUp} trend={{ value: "+28%", direction: "up" }} />
-          <KPICard label="Total withdrawn" value="₦263,650" sub="Across 41 payouts" icon={ArrowUp} />
-          <KPICard label="Avg. per drop" value="₦6,646" sub="₦1,430 / kg avg" icon={WalletIcon} variant="primary" />
+          <KPICard label="Lifetime earned" value={formatNaira(data?.totalEarned / 100)} sub="Total from waste drops" icon={Coins} variant="gold" />
+          <KPICard label="Total withdrawn" value={formatNaira(data?.totalWithdrawn / 100)} sub="Bank & Bill payments" icon={ArrowUp} />
+          <KPICard label="Wallet Status" value="Active" sub="Account verified" icon={WalletIcon} variant="primary" />
+          <KPICard label="Security" value="Encrypted" sub="SSL Protected" icon={TrendingUp} />
         </div>
       </div>
 
@@ -78,10 +73,7 @@ export default function CollectorWallet() {
             <button className="btn-outline btn-sm"><Plus size={12} /> Add</button>
           </div>
           <div className="mt-4 space-y-3">
-            {[
-              { bank: "GTBank", acct: "****8821", name: "Adaeze Nwosu", default: true, color: "bg-orange-500" },
-              { bank: "Opay", acct: "****1129", name: "Adaeze Nwosu", default: false, color: "bg-emerald-500" },
-            ].map((a) => (
+            {data?.linkedAccounts?.map((a: any) => (
               <div key={a.acct} className="flex items-center gap-4 rounded-2xl border border-bordergray bg-cream p-4">
                 <div className={`grid h-11 w-11 place-items-center rounded-xl ${a.color} text-white font-extrabold`}>
                   {a.bank[0]}
@@ -94,6 +86,9 @@ export default function CollectorWallet() {
                 <button className="btn-ghost btn-sm">Manage</button>
               </div>
             ))}
+            {(!data?.linkedAccounts || data.linkedAccounts.length === 0) && (
+              <div className="p-10 text-center text-textgray border-2 border-dashed border-bordergray rounded-2xl">No linked accounts found.</div>
+            )}
           </div>
         </div>
 
@@ -127,7 +122,7 @@ export default function CollectorWallet() {
         <table className="tbl">
           <thead><tr><th>ID</th><th>Description</th><th>Date</th><th className="text-right">Amount</th><th>Status</th></tr></thead>
           <tbody>
-            {TX.map((t) => (
+            {data?.transactions?.map((t: any) => (
               <tr key={t.id}>
                 <td className="font-mono text-xs text-textgray">{t.id}</td>
                 <td>
@@ -138,15 +133,18 @@ export default function CollectorWallet() {
                     <span className="font-bold">{t.label}</span>
                   </div>
                 </td>
-                <td className="text-textgray">{t.date}</td>
+                <td className="text-textgray">{new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                 <td className="text-right">
                   <span className={`money ${t.amt > 0 ? "text-success" : "text-error"}`}>
                     {t.amt > 0 ? "+" : ""}{formatNaira(t.amt)}
                   </span>
                 </td>
-                <td><StatusPill status="success" label={t.status} /></td>
+                <td><StatusPill status={t.status === "completed" || t.status === "verified" ? "success" : t.status === "pending" ? "pending" : "error"} label={t.status} /></td>
               </tr>
             ))}
+            {(!data?.transactions || data.transactions.length === 0) && (
+              <tr><td colSpan={5} className="py-10 text-center text-textgray">No transactions found.</td></tr>
+            )}
           </tbody>
         </table>
       </div>

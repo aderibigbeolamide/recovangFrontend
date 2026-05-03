@@ -3,23 +3,23 @@ import { Avatar, KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { formatNaira } from "@/lib/cn";
 import { useState } from "react";
 import { Coins, TrendingUp } from "lucide-react";
-
-const REFS = [
-  { name: "Tunde Bello", date: "Apr 22, 2026", drops: 14, earned: 2400, status: "active" },
-  { name: "Maryam Sani", date: "Apr 18, 2026", drops: 9, earned: 1800, status: "active" },
-  { name: "Chinedu Okeke", date: "Apr 11, 2026", drops: 22, earned: 4400, status: "active" },
-  { name: "Joy Eze", date: "Apr 04, 2026", drops: 3, earned: 600, status: "pending" },
-  { name: "Wale Aboderin", date: "Mar 28, 2026", drops: 31, earned: 6200, status: "active" },
-];
+import { useReferrals } from "@/hooks/useCollector";
 
 export default function CollectorReferrals() {
+  const { data, isLoading } = useReferrals();
   const [copied, setCopied] = useState(false);
-  const link = "recovang.com/r/ADAEZE-N";
+  
+  const link = data?.link || "https://recovang.com/r/RECOV1";
+  
   function copy() {
     navigator.clipboard.writeText(link);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading referrals...</div>;
+
+  const friends = data?.friends || [];
 
   return (
     <>
@@ -30,9 +30,9 @@ export default function CollectorReferrals() {
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <KPICard label="Friends invited" value="14" sub="5 active recyclers" icon={Users} variant="primary" />
-        <KPICard label="Bonus earned" value="₦15,400" sub="Lifetime" icon={Coins} variant="gold" />
-        <KPICard label="Avg. friend drops" value="11.2" sub="In their first 30 days" icon={TrendingUp} />
+        <KPICard label="Friends invited" value={data?.totalReferrals || 0} sub={`${data?.activeReferrals || 0} active recyclers`} icon={Users} variant="primary" />
+        <KPICard label="Bonus earned" value={formatNaira(data?.totalBonus || 0)} sub="Lifetime" icon={Coins} variant="gold" />
+        <KPICard label="Avg. friend drops" value="0" sub="In their first 30 days" icon={TrendingUp} />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
@@ -48,15 +48,15 @@ export default function CollectorReferrals() {
           </div>
 
           <div className="mt-5 grid grid-cols-3 gap-2">
-            <a className="flex items-center justify-center gap-2 rounded-xl bg-success px-3 py-3 font-bold text-white hover:opacity-90">
+            <a href={`https://wa.me/?text=Join me on Recovang and earn money from waste! Use my link: ${link}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-success px-3 py-3 font-bold text-white hover:opacity-90">
               <MessageCircle size={14} /> WhatsApp
             </a>
-            <a className="flex items-center justify-center gap-2 rounded-xl bg-info px-3 py-3 font-bold text-white hover:opacity-90">
+            <a href={`https://t.me/share/url?url=${link}&text=Join me on Recovang!`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-xl bg-info px-3 py-3 font-bold text-white hover:opacity-90">
               <Send size={14} /> Telegram
             </a>
-            <a className="flex items-center justify-center gap-2 rounded-xl bg-white/10 px-3 py-3 font-bold text-white hover:bg-white/15">
-              <Share2 size={14} /> More
-            </a>
+            <button onClick={copy} className="flex items-center justify-center gap-2 rounded-xl bg-white/10 px-3 py-3 font-bold text-white hover:bg-white/15">
+              <Share2 size={14} /> Copy link
+            </button>
           </div>
 
           <div className="mt-6 grid grid-cols-3 gap-3">
@@ -75,20 +75,17 @@ export default function CollectorReferrals() {
 
         <div className="card-gold flex flex-col p-7 lg:col-span-5">
           <Gift size={28} className="text-charcoal" />
-          <h3 className="mt-4 text-h3 text-charcoal">April referral promo</h3>
+          <h3 className="mt-4 text-h3 text-charcoal">Referral status</h3>
           <p className="mt-2 text-sm text-charcoal/80">
-            Invite 10+ friends in April and unlock the <span className="font-extrabold">Eco Influencer</span> badge plus a ₦5,000 bonus.
+            You earn <span className="font-extrabold">₦500</span> for every friend that joins and completes their first 5 drops.
           </p>
           <div className="mt-5 rounded-2xl bg-white/40 p-4">
             <div className="flex items-center justify-between text-xs font-bold text-charcoal">
-              <span>Progress</span>
-              <span className="font-mono">14 / 10 ✓</span>
+              <span>Goal: 10 Referrals</span>
+              <span className="font-mono">{data?.totalReferrals || 0} / 10</span>
             </div>
             <div className="mt-2 h-2 overflow-hidden rounded-full bg-charcoal/10">
-              <div className="h-full w-full rounded-full bg-charcoal" />
-            </div>
-            <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-success px-3 py-1 text-xs font-extrabold text-white">
-              <Check size={12} /> Bonus claimed
+              <div className="h-full rounded-full bg-charcoal" style={{ width: `${Math.min((data?.totalReferrals || 0) * 10, 100)}%` }} />
             </div>
           </div>
         </div>
@@ -99,25 +96,35 @@ export default function CollectorReferrals() {
           <h3 className="text-h4">Your referrals</h3>
           <p className="text-sm text-textgray">People who joined Recovang through you</p>
         </div>
-        <table className="tbl">
-          <thead><tr><th>Friend</th><th>Joined</th><th>Drops</th><th className="text-right">You earned</th><th>Status</th></tr></thead>
-          <tbody>
-            {REFS.map((r) => (
-              <tr key={r.name}>
-                <td>
-                  <div className="flex items-center gap-3">
-                    <Avatar name={r.name} size={32} />
-                    <span className="font-bold">{r.name}</span>
-                  </div>
-                </td>
-                <td className="text-textgray">{r.date}</td>
-                <td className="font-mono">{r.drops}</td>
-                <td className="text-right"><span className="money text-success">+{formatNaira(r.earned)}</span></td>
-                <td><StatusPill status={r.status === "active" ? "success" : "pending"} label={r.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="tbl-container">
+          <table className="tbl">
+            <thead><tr><th>Friend</th><th>Joined</th><th>Drops</th><th className="text-right">You earned</th><th>Status</th></tr></thead>
+            <tbody>
+              {friends.map((r: any) => (
+                <tr key={r.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <Avatar name={r.name} size={32} />
+                      <span className="font-bold">{r.name}</span>
+                    </div>
+                  </td>
+                  <td className="text-textgray">{r.date}</td>
+                  <td className="font-mono">{r.drops}</td>
+                  <td className="text-right"><span className="money text-success">+{formatNaira(r.earned)}</span></td>
+                  <td><StatusPill status={r.status === "active" ? "success" : "pending"} label={r.status} /></td>
+                </tr>
+              ))}
+              {friends.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-textgray">
+                    <Users size={40} className="mx-auto mb-3 opacity-20" />
+                    <p>No referrals yet. Share your link to start earning!</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </>
   );

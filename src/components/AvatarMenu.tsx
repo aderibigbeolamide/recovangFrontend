@@ -55,19 +55,20 @@ export function AvatarMenu({ portalBase, compact = false }: { portalBase: string
           </div>
           <div className="p-1.5">
             <Link
-              to={`${portalBase}/settings`}
+              to={user?.role?.toLowerCase() === "super_admin" ? `${portalBase}/settings` : `${portalBase}/profile-settings`}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-charcoal hover:bg-cream"
             >
               <Settings size={15} className="text-textgray" /> Settings
             </Link>
             <Link
-              to={`${portalBase}/settings#profile`}
+              to={`${portalBase}/profile-settings`}
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-charcoal hover:bg-cream"
             >
               <User2 size={15} className="text-textgray" /> My profile
             </Link>
+
             <a
               href="mailto:hello@recovang.com"
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-charcoal hover:bg-cream"

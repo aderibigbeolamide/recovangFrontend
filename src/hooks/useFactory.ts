@@ -48,8 +48,8 @@ export function useFactoryDashboard() {
     queryFn: async () => {
       if (USE_MOCK) return { supply: SUPPLY, orders: ORDERS, shipments: SHIPMENTS, receipts: RECEIPTS };
       try {
-        const { data } = await api.get("/factory/dashboard");
-        return data;
+        const res = await api.get("/factory/dashboard");
+        return res.data.data;
       } catch {
         return { supply: SUPPLY, orders: ORDERS, shipments: SHIPMENTS, receipts: RECEIPTS };
       }
@@ -59,3 +59,18 @@ export function useFactoryDashboard() {
 }
 
 export const FACTORY_MOCK = { supply: SUPPLY, orders: ORDERS, shipments: SHIPMENTS, receipts: RECEIPTS };
+
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
+export function usePlaceOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: { categoryId: string, hubId: string, quantityKg: number, unitPrice: number }) => {
+      const res = await api.post("/factory/orders", data);
+      return res.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["factory", "dashboard"] });
+    },
+  });
+}

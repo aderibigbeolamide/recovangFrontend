@@ -221,7 +221,8 @@ export function ProgressRing({
   const r = (size - thickness) / 2;
   const c = size / 2;
   const circ = 2 * Math.PI * r;
-  const off = circ - (Math.min(100, Math.max(0, value)) / 100) * circ;
+  const safeValue = isNaN(value) ? 0 : Math.min(100, Math.max(0, value));
+  const off = circ - (safeValue / 100) * circ;
   return (
     <div className="relative inline-flex items-center justify-center">
       <svg width={size} height={size}>

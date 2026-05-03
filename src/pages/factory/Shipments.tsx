@@ -4,6 +4,7 @@ import { PageHeader, StatusPill } from "@/components/ui";
 import { DataTable, type Column } from "@/components/DataTable";
 import { ProgressBar } from "@/components/charts";
 import { useFactoryDashboard } from "@/hooks/useFactory";
+import { LogisticsMap } from "@/components/LogisticsMap";
 
 export default function FactoryShipments() {
   const { data } = useFactoryDashboard();
@@ -57,14 +58,11 @@ export default function FactoryShipments() {
           <h3 className="text-h4">Live network map</h3>
           <p className="text-sm text-textgray">Hub-to-gate routes across Africa, starting with Nigeria.</p>
         </div>
-        <div className="grid h-72 place-items-center bg-grad-mint">
-          <div className="text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white shadow-soft">
-              <Truck size={28} className="text-primary" />
-            </div>
-            <div className="mt-3 text-sm font-extrabold text-charcoal">Live map view</div>
-            <div className="text-xs text-textgray">Map rendering enabled when geolocation provider key is set.</div>
-          </div>
+        <div className="bg-cream/20">
+          <LogisticsMap 
+            routes={data.shipments} 
+            hubs={data.hubs || []} 
+          />
         </div>
       </div>
     </>

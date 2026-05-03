@@ -18,8 +18,17 @@ const ROWS = [
   { id: "RX-2289", date: "Mar 30, 2026 · 10:05", hub: "Surulere Hub", agent: "Bola A.", cat: "PET Bottles", kg: 5.0, rate: 200, amt: 1000, status: "verified" },
 ];
 
+import { useSubmissions, useDashboard } from "@/hooks/useCollector";
+
 export default function CollectorHistory() {
   const [open, setOpen] = useState<string | null>(null);
+  const { data: submissions, isLoading: loadingSubs } = useSubmissions();
+  const { data: dashboard, isLoading: loadingDash } = useDashboard();
+
+  if (loadingSubs || loadingDash) return <div className="p-20 text-center font-bold">Loading history...</div>;
+
+  const totalKg = submissions?.reduce((acc: number, s: any) => acc + Number(s.totalWeightKg), 0) || 0;
+
   return (
     <>
       <PageHeader
@@ -30,9 +39,9 @@ export default function CollectorHistory() {
       />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <KPICard label="Total submissions" value="47" sub="across 9 categories" icon={Recycle} />
-        <KPICard label="Total recovered" value="218.4 kg" sub="0.22 tonnes lifetime" icon={Recycle} />
-        <KPICard label="Total earned" value="₦312,400" sub="Avg ₦6,646/drop" icon={Coins} variant="gold" />
+        <KPICard label="Total submissions" value={submissions?.length || 0} sub="Lifetime drops" icon={Recycle} />
+        <KPICard label="Total recovered" value={`${totalKg.toFixed(1)} kg`} sub={`${(totalKg / 1000).toFixed(2)} tonnes lifetime`} icon={Recycle} />
+        <KPICard label="Total earned" value={formatNaira(dashboard?.totalEarned / 100)} sub={`Avg ${formatNaira((dashboard?.totalEarned / 100) / (submissions?.length || 1))}/drop`} icon={Coins} variant="gold" />
       </div>
 
       <div className="mt-6 card p-4">
@@ -50,36 +59,38 @@ export default function CollectorHistory() {
       <div className="mt-6 card overflow-hidden">
         <table className="tbl">
           <thead>
-            <tr><th>Drop ID</th><th>Date</th><th>Hub / Agent</th><th>Material</th><th>Weight</th><th>Rate</th><th className="text-right">Amount</th><th>Status</th></tr>
+            <tr><th>Drop ID</th><th>Date</th><th>Hub / Agent</th><th>Material</th><th>Weight</th><th className="text-right">Amount</th><th>Status</th></tr>
           </thead>
           <tbody>
-            {ROWS.map((r) => (
-              <tr key={r.id} className="cursor-pointer" onClick={() => setOpen(open === r.id ? null : r.id)}>
-                <td className="font-mono text-xs font-bold text-primary">{r.id}</td>
-                <td className="text-textgray">{r.date}</td>
+            {submissions?.map((s: any) => (
+              <tr key={s.id} className="cursor-pointer" onClick={() => setOpen(open === s.id ? null : s.id)}>
+                <td className="font-mono text-xs font-bold text-primary">{s.id.slice(0, 8).toUpperCase()}</td>
+                <td className="text-textgray">{new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
                 <td>
-                  <div className="font-bold">{r.hub}</div>
-                  <div className="text-[11px] text-textgray">{r.agent}</div>
+                  <div className="font-bold">{s.hub?.name || "Mobile Agent"}</div>
+                  <div className="text-[11px] text-textgray">{s.agent?.user?.firstName || "Pending"}</div>
                 </td>
                 <td>
                   <div className="flex items-center gap-2">
-                    <CategoryIcon category={r.cat} size={26} />
-                    {r.cat}
+                    <CategoryIcon category={s.items[0]?.wasteCategory?.name || "Mixed"} size={26} />
+                    {s.items[0]?.wasteCategory?.name || "Mixed"}
                   </div>
                 </td>
-                <td className="font-mono">{r.kg} kg</td>
-                <td className="font-mono text-xs text-textgray">{formatNaira(r.rate)}/kg</td>
-                <td className="text-right"><span className="money text-success">+{formatNaira(r.amt)}</span></td>
-                <td><StatusPill status={r.status === "verified" ? "success" : r.status === "disputed" ? "error" : "pending"} label={r.status} /></td>
+                <td className="font-mono">{s.totalWeightKg} kg</td>
+                <td className="text-right"><span className="money text-success">+{formatNaira(s.totalAmount / 100)}</span></td>
+                <td><StatusPill status={s.status === "verified" || s.status === "VERIFIED" ? "success" : s.status === "pending" || s.status === "PENDING" ? "pending" : "error"} label={s.status.toLowerCase()} /></td>
               </tr>
             ))}
+            {(!submissions || submissions.length === 0) && (
+              <tr><td colSpan={7} className="py-20 text-center text-textgray">No submissions found.</td></tr>
+            )}
           </tbody>
         </table>
         <div className="flex items-center justify-between border-t border-bordergray bg-cream/40 px-6 py-4 text-sm">
-          <div className="text-textgray">Showing <span className="font-bold text-charcoal">10</span> of 47 submissions</div>
+          <div className="text-textgray">Showing <span className="font-bold text-charcoal">{submissions?.length || 0}</span> submissions</div>
           <div className="flex gap-2">
-            <button className="btn-outline btn-sm">Previous</button>
-            <button className="btn-outline btn-sm">Next</button>
+            <button className="btn-outline btn-sm disabled:opacity-50">Previous</button>
+            <button className="btn-outline btn-sm disabled:opacity-50">Next</button>
           </div>
         </div>
       </div>

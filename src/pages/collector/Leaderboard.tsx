@@ -24,9 +24,18 @@ const TABLE = [
 const RANGES = ["This week", "This month", "All time"];
 const SCOPES = ["Lagos", "Abuja", "PH", "All Nigeria"];
 
+import { useLeaderboard } from "@/hooks/useCollector";
+
 export default function CollectorLeaderboard() {
   const [range, setRange] = useState(RANGES[0]);
   const [scope, setScope] = useState(SCOPES[0]);
+  const { data: leaderboard, isLoading } = useLeaderboard();
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading rankings...</div>;
+
+  const top3 = leaderboard?.slice(0, 3) || [];
+  const rest = leaderboard?.slice(3) || [];
+
   return (
     <>
       <PageHeader
@@ -55,21 +64,19 @@ export default function CollectorLeaderboard() {
         <div className="relative grid items-end gap-4 sm:grid-cols-3">
           {/* Reorder for podium look: 2nd, 1st, 3rd */}
           {[
-            { ...TOP3[1], rank: 2, h: 160, color: "bg-charcoal/8 text-charcoal", trophy: <Medal size={20} className="text-charcoal/60" /> },
-            { ...TOP3[0], rank: 1, h: 200, color: "bg-grad-gold text-charcoal", trophy: <Crown size={22} className="text-charcoal" /> },
-            { ...TOP3[2], rank: 3, h: 140, color: "bg-orange-100 text-orange-700", trophy: <Medal size={20} className="text-orange-600" /> },
-          ].map((p) => (
+            top3[1] ? { ...top3[1], rank: 2, h: 160, color: "bg-charcoal/8 text-charcoal", trophy: <Medal size={20} className="text-charcoal/60" /> } : null,
+            top3[0] ? { ...top3[0], rank: 1, h: 200, color: "bg-grad-gold text-charcoal", trophy: <Crown size={22} className="text-charcoal" /> } : null,
+            top3[2] ? { ...top3[2], rank: 3, h: 140, color: "bg-orange-100 text-orange-700", trophy: <Medal size={20} className="text-orange-600" /> } : null,
+          ].filter(Boolean).map((p: any) => (
             <div key={p.rank} className="flex flex-col items-center text-center">
               <div className="relative mb-3">
-                <Avatar name={p.name.replace(" (you)", "")} size={68} />
+                <Avatar name={p.name} size={68} />
                 <div className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-white shadow-soft">{p.trophy}</div>
               </div>
               <div className="font-extrabold text-charcoal">{p.name}</div>
-              <div className="text-xs text-textgray">{p.area}</div>
-              <div className="mt-2 flex items-center gap-3 text-xs text-textgray">
-                <span className="font-mono font-extrabold text-charcoal">{p.kg} kg</span>
-                <span>·</span>
-                <span className="money">{formatNaira(p.n)}</span>
+              <div className="text-xs text-textgray">Area Rank #{p.rank}</div>
+              <div className="mt-2 flex items-center justify-center gap-3 text-xs text-textgray">
+                <span className="font-mono font-extrabold text-charcoal">{p.points} points</span>
               </div>
               <div className={`mt-3 grid w-full place-items-end rounded-t-2xl px-4 pb-3 pt-4 font-display text-3xl font-extrabold ${p.color}`} style={{ height: p.h }}>
                 #{p.rank}
@@ -77,15 +84,16 @@ export default function CollectorLeaderboard() {
             </div>
           ))}
         </div>
+        {(!leaderboard || leaderboard.length === 0) && <div className="relative py-20 text-center text-textgray font-bold">No active leaderboard data for this period.</div>}
       </div>
 
       <div className="mt-6 card overflow-hidden">
         <table className="tbl">
           <thead>
-            <tr><th className="w-16">Rank</th><th>Collector</th><th>Area</th><th>Recovered</th><th>Earned</th><th>Streak</th></tr>
+            <tr><th className="w-16">Rank</th><th>Collector</th><th>Status</th><th>Score</th><th>Recent activity</th></tr>
           </thead>
           <tbody>
-            {TABLE.map((r) => (
+            {rest.map((r: any) => (
               <tr key={r.rank}>
                 <td><span className="font-mono text-sm font-extrabold text-charcoal/70">#{r.rank}</span></td>
                 <td>
@@ -94,13 +102,10 @@ export default function CollectorLeaderboard() {
                     <span className="font-bold">{r.name}</span>
                   </div>
                 </td>
-                <td className="text-textgray">{r.area}</td>
-                <td className="font-mono">{r.kg} kg</td>
-                <td><span className="money">{formatNaira(r.n)}</span></td>
+                <td><span className="badge-mint">Active</span></td>
+                <td className="font-mono">{r.points}</td>
                 <td>
-                  <span className="badge bg-error-50 text-error inline-flex items-center gap-1">
-                    <Flame size={11} /> {r.streak} d
-                  </span>
+                  <span className="text-textgray text-xs">Last drop today</span>
                 </td>
               </tr>
             ))}

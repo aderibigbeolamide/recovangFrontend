@@ -36,7 +36,7 @@ export default function BrandCompliance() {
       <div className="card overflow-hidden">
         <div className="grid gap-5 border-b border-bordergray p-6 sm:grid-cols-2 lg:grid-cols-5">
           {data.byCategory.map((c: any) => {
-            const pct = Math.round((c.recovered / c.target) * 100);
+            const pct = Math.round((c.recovered / (c.target || 1)) * 100);
             return (
               <div key={c.name}>
                 <div className="flex items-center justify-between">

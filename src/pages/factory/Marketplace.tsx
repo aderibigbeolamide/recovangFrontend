@@ -3,11 +3,12 @@ import { Boxes, Building2, ShoppingCart } from "lucide-react";
 import { PageHeader, StatusPill } from "@/components/ui";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Modal } from "@/components/Modal";
-import { useFactoryDashboard } from "@/hooks/useFactory";
+import { useFactoryDashboard, usePlaceOrder } from "@/hooks/useFactory";
 import { formatNaira, formatKg } from "@/lib/cn";
 
 export default function FactoryMarketplace() {
   const { data } = useFactoryDashboard();
+  const { mutate: placeOrder, isPending } = usePlaceOrder();
   const [order, setOrder] = useState<any | null>(null);
   const [success, setSuccess] = useState(false);
   const [orderKg, setOrderKg] = useState<number>(1000);
@@ -57,7 +58,25 @@ export default function FactoryMarketplace() {
         footer={
           <>
             <button onClick={() => setOrder(null)} className="btn-outline">Cancel</button>
-            <button onClick={() => { setOrder(null); setSuccess(true); }} className="btn-primary">Place order</button>
+            <button 
+              onClick={() => { 
+                placeOrder({
+                  categoryId: order.categoryId,
+                  hubId: order.hubId,
+                  quantityKg: orderKg,
+                  unitPrice: order.pricePerKg
+                }, {
+                  onSuccess: () => {
+                    setOrder(null); 
+                    setSuccess(true); 
+                  }
+                });
+              }} 
+              disabled={isPending}
+              className="btn-primary"
+            >
+              {isPending ? "Placing..." : "Place order"}
+            </button>
           </>
         }
       >

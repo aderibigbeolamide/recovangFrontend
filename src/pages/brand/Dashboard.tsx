@@ -4,29 +4,35 @@ import { ArrowRight, Award, Building2, CheckCircle2, Coins, Download, FileText, 
 import { KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { AreaChart, ProgressBar, ProgressRing } from "@/components/charts";
 import { useBrandDashboard } from "@/hooks/useBrand";
-import { formatNaira, formatKg } from "@/lib/cn";
+import { formatNaira, formatKg, formatNumber } from "@/lib/cn";
 import { Modal } from "@/components/Modal";
+import { RecoveryDetailDrawer } from "@/components/RecoveryDetailDrawer";
 
 export default function BrandDashboard() {
   const { data } = useBrandDashboard();
   const [showPay, setShowPay] = useState(false);
   const [showCert, setShowCert] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<string | null>(null);
 
   if (!data) return null;
+  const isApproved = data.isApproved;
   const monthly = Array.isArray(data?.monthly) ? data.monthly : [];
   const byCategory = Array.isArray(data?.byCategory) ? data.byCategory : [];
   const recentRecoveries = Array.isArray(data?.recentRecoveries) ? data.recentRecoveries : [];
 
-  const fyTarget = data?.fyTarget ?? 1;
+  const fyTarget = data?.fyTarget || 0;
   const recovered = data?.recovered ?? 0;
-  const compliancePct = Math.round((recovered / fyTarget) * 100);
+  const compliancePct = fyTarget > 0 ? Math.round((recovered / fyTarget) * 100) : 0;
 
   return (
     <>
       <PageHeader
         eyebrow={`Brand portal · ${data.brand}`}
         title="EPR compliance overview"
-        subtitle={`You're at ${compliancePct}% of your ${data.quarter} recovery target. Strong quarter — keep going.`}
+        subtitle={isApproved 
+            ? `You're at ${compliancePct}% of your ${data.quarter} recovery target. Strong quarter — keep going.`
+            : "Your brand application is currently pending. Please complete your KYC to set your EPR targets."
+        }
         actions={
           <>
             <Link to="/brand/reports" className="btn-outline"><Download size={14} /> Download report</Link>
@@ -91,7 +97,7 @@ export default function BrandDashboard() {
         </div>
         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
           {byCategory.map((c: any) => {
-            const pct = Math.round((c.recovered / c.target) * 100);
+            const pct = Math.round((c.recovered / (c.target || 1)) * 100);
             return (
               <div key={c.name} className="rounded-2xl border border-bordergray p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-2">
@@ -125,7 +131,7 @@ export default function BrandDashboard() {
             <thead><tr><th>Drop ID</th><th>Date</th><th>Hub</th><th>Category</th><th>Weight</th><th className="text-right">EPR value</th></tr></thead>
             <tbody>
               {recentRecoveries?.slice(0, 6).map((r: any) => (
-                <tr key={r.id}>
+                <tr key={r.id} onClick={() => setSelectedSubmission(r.id)} className="cursor-pointer hover:bg-cream/50 transition-colors">
                   <td className="font-mono text-xs">{r.id}</td>
                   <td className="text-textgray">{r.date}</td>
                   <td className="font-bold">{r.hub}</td>
@@ -191,6 +197,11 @@ export default function BrandDashboard() {
           </div>
         </div>
       </Modal>
+
+      <RecoveryDetailDrawer 
+        submissionId={selectedSubmission} 
+        onClose={() => setSelectedSubmission(null)} 
+      />
     </>
   );
 }

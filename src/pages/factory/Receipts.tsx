@@ -1,18 +1,31 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Camera, CheckCircle2, X } from "lucide-react";
 import { PageHeader, StatusPill } from "@/components/ui";
 import { DataTable, type Column } from "@/components/DataTable";
 import { Modal, ConfirmModal } from "@/components/Modal";
+import { ReceiptModal } from "@/components/ReceiptModal";
 import { useFactoryDashboard, FACTORY_MOCK } from "@/hooks/useFactory";
 import { formatNumber } from "@/lib/cn";
 
 export default function FactoryReceipts() {
-  const { data } = useFactoryDashboard();
-  const [receipts, setReceipts] = useState(data?.receipts ?? FACTORY_MOCK.receipts);
+  const { data, isLoading } = useFactoryDashboard();
+  const [receipts, setReceipts] = useState<any[]>([]);
   const [verify, setVerify] = useState<any | null>(null);
   const [reject, setReject] = useState<any | null>(null);
+  const [viewReceipt, setViewReceipt] = useState<any | null>(null);
   const [actualKg, setActualKg] = useState<number>(0);
   const [qaScore, setQaScore] = useState<number>(95);
+
+  useState(() => {
+    if (data?.receipts) setReceipts(data.receipts);
+  });
+
+  // Also sync when data changes
+  useEffect(() => {
+    if (data?.receipts) setReceipts(data.receipts);
+  }, [data]);
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading receipts...</div>;
 
   function open(r: any) {
     setVerify(r);
@@ -52,7 +65,9 @@ export default function FactoryReceipts() {
           <button onClick={() => open(r)} className="btn-primary btn-sm"><CheckCircle2 size={12} /> Verify</button>
           <button onClick={() => setReject(r)} className="btn-ghost btn-sm text-error"><X size={12} /></button>
         </div>
-      ) : null
+      ) : (
+        <button onClick={() => setViewReceipt(r)} className="btn-outline btn-sm">View Receipt</button>
+      )
     ) },
   ];
 
@@ -130,6 +145,11 @@ export default function FactoryReceipts() {
         title={`Reject ${reject?.id ?? ""}?`}
         description="A dispute will be opened with the hub. Shipment fee will be reversed."
         confirmLabel="Reject load"
+      />
+
+      <ReceiptModal 
+        receipt={viewReceipt} 
+        onClose={() => setViewReceipt(null)} 
       />
     </>
   );

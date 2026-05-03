@@ -20,7 +20,7 @@ export function Blob({ className, color = "from-primary/30 to-accent/20" }: { cl
 }
 
 /* Waste category icon — uses brand colors */
-export function CategoryIcon({ category, size = 28 }: { category: string; size?: number }) {
+export function CategoryIcon({ category, size = 28 }: { category?: string; size?: number }) {
   const C = (children: React.ReactNode, fill = "#E6F4EC", stroke = "#1A6B3C") => (
     <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
       <rect width="32" height="32" rx="9" fill={fill} />
@@ -29,6 +29,11 @@ export function CategoryIcon({ category, size = 28 }: { category: string; size?:
       </g>
     </svg>
   );
+
+  if (!category) {
+    return C(<path d="M16 8a8 8 0 1 0 0 16 8 8 0 0 0 0-16Z" />);
+  }
+
   switch (category.toLowerCase()) {
     case "pet":
     case "plastic":

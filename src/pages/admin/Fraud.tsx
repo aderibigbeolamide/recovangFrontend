@@ -3,20 +3,12 @@ import { AlertTriangle, Camera, Check, ChevronDown, Clock, Eye, Filter, Flag, Ma
 import { Avatar, KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { CategoryIcon } from "@/components/illustrations";
 import { formatNaira } from "@/lib/cn";
+import { toast } from "react-hot-toast";
 
-const FLAGS = [
-  { id: "FR-2419", drop: "RX-2419", risk: "high", reason: "Weight 240% above scale capacity for 4 photos shown", collector: "Anonymous user 28482", hub: "Lekki Hub", agent: "Folake A.", cat: "PET Bottles", weight: 18.4, payout: 3680, time: "2 mins ago" },
-  { id: "FR-2418", drop: "RX-2418", risk: "high", reason: "Same hub, same collector, 14 drops in 12 minutes", collector: "Tunde Bello", hub: "Yaba Centre", agent: "Tope D.", cat: "Cardboard", weight: 6.0, payout: 480, time: "8 mins ago" },
-  { id: "FR-2417", drop: "RX-2417", risk: "medium", reason: "Photos appear duplicated from drop RX-2402", collector: "Maryam Sani", hub: "Surulere Hub", agent: "Bola A.", cat: "Aluminium Cans", weight: 1.8, payout: 1080, time: "27 mins ago" },
-  { id: "FR-2416", drop: "RX-2416", risk: "medium", reason: "Geo location 12km from registered hub coordinates", collector: "Joy Eze", hub: "Surulere Hub", agent: "Bola A.", cat: "Mixed Paper", weight: 3.4, payout: 204, time: "41 mins ago" },
-  { id: "FR-2415", drop: "RX-2415", risk: "low", reason: "First-time collector, large initial drop", collector: "Anonymous user 28491", hub: "Apapa Hub", agent: "Sola K.", cat: "Glass Bottles", weight: 22.4, payout: 672, time: "1h ago" },
-  { id: "FR-2414", drop: "RX-2414", risk: "high", reason: "Account age 4 minutes, drop weight 9.2kg", collector: "Anonymous user 28492", hub: "Ikeja Hub", agent: "Wale T.", cat: "PET Bottles", weight: 9.2, payout: 1840, time: "1h 12m ago" },
-  { id: "FR-2413", drop: "RX-2413", risk: "medium", reason: "E-Waste with no serial-number photo", collector: "Chinedu Okeke", hub: "Surulere Hub", agent: "Femi O.", cat: "E-Waste", weight: 0.8, payout: 960, time: "2h ago" },
-  { id: "FR-2412", drop: "RX-2412", risk: "low", reason: "Multiple identity-verification retries", collector: "Wale Aboderin", hub: "Yaba Centre", agent: "Tope D.", cat: "PET Bottles", weight: 4.4, payout: 880, time: "2h 30m ago" },
-  { id: "FR-2411", drop: "RX-2411", risk: "high", reason: "ML model: 92% probability synthetic photo", collector: "Anonymous user 28488", hub: "Lekki Hub", agent: "Folake A.", cat: "Aluminium Cans", weight: 4.6, payout: 2760, time: "3h ago" },
-];
+const FLAGS: any[] = [];
 
-import { useFlaggedSubmissions } from "@/hooks/useAdmin";
+
+import { useFlaggedSubmissions, useReviewFraudAlert } from "@/hooks/useAdmin";
 import { formatKg, formatNumber } from "@/lib/cn";
 
 const RISK_MAP: Record<string, { c: string; l: string }> = {
@@ -27,14 +19,81 @@ const RISK_MAP: Record<string, { c: string; l: string }> = {
 
 export default function AdminFraud() {
   const { data: flagged, isLoading } = useFlaggedSubmissions();
+  const { mutate: reviewAlert, isPending: isReviewing } = useReviewFraudAlert();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [riskFilter, setRiskFilter] = useState<string>("all");
+  const [hubFilter, setHubFilter] = useState<string>("all");
 
-  const flags = Array.isArray(flagged) && flagged.length > 0 ? flagged : [
-    { id: "FR-2419", drop: "RX-2419", risk: "high", reason: "Weight 240% above scale capacity for 4 photos shown", collector: "Anonymous user 28482", hub: "Lekki Hub", agent: "Folake A.", cat: "PET Bottles", weight: 18.4, payout: 3680, time: "2 mins ago" },
-    { id: "FR-2418", drop: "RX-2418", risk: "high", reason: "Same hub, same collector, 14 drops in 12 minutes", collector: "Tunde Bello", hub: "Yaba Centre", agent: "Tope D.", cat: "Cardboard", weight: 6.0, payout: 480, time: "8 mins ago" },
-  ];
+  const flags = Array.isArray(flagged) && flagged.length > 0 ? flagged.map((f: any) => {
+    const user = f.user || f.submission?.collector?.user;
+    const submission = f.submission;
+    const items = submission?.items || [];
+    const mainItem = items[0];
+    
+    return {
+      id: f.id,
+      drop: submission?.id?.slice(0, 8) || "N/A",
+      risk: f.type === 'LARGE_SUBMISSION' || f.type === 'SUSPICIOUS_PHOTOS' ? 'high' : 'medium',
+      reason: f.description,
+      collector: user ? `${user.firstName} ${user.lastName}` : "Unknown User",
+      hub: submission?.hub?.name || "N/A",
+      agent: submission?.agent?.user ? `${submission.agent.user.firstName} ${submission.agent.user.lastName}` : (submission?.agent ? "System Agent" : "System"),
+      cat: mainItem?.wasteCategory?.name || "Materials",
+      weight: parseFloat(submission?.totalWeightKg || 0),
+      payout: (submission?.totalAmount || 0), // Use as is, formatNaira will handle it
+      time: f.createdAt ? new Date(f.createdAt).toLocaleTimeString() : "N/A",
+      photos: submission?.photos || []
+    };
+  }).filter((f: any) => {
+    const matchesRisk = riskFilter === "all" || f.risk === riskFilter;
+    const matchesHub = hubFilter === "all" || f.hub === hubFilter;
+    return matchesRisk && matchesHub;
+  }) : []; // No fallback to mock FLAGS if we want real data
+
+  // Extract unique hubs for the filter
+  const uniqueHubs = Array.from(new Set(Array.isArray(flagged) ? flagged.map((f: any) => f.submission?.hub?.name).filter(Boolean) : []));
 
   const sel = flags.find((f: any) => f.id === (activeId || flags[0]?.id)) || flags[0];
+
+  const handleReview = (action: "DISMISS" | "FREEZE" | "RESOLVE") => {
+    if (!sel) return;
+    
+    const loadingToast = toast.loading("Processing security review...");
+    
+    reviewAlert({ id: sel.id, action }, {
+      onSuccess: (data: any) => {
+        toast.success(
+          <div className="flex flex-col gap-1">
+            <span className="font-bold">Action Recorded</span>
+            <span className="text-xs opacity-80">The {action.toLowerCase()} decision is now live in the database and audit logs.</span>
+          </div>,
+          { duration: 5000 }
+        );
+
+        
+        // Auto-select the next item if available
+        const currentIndex = flags.findIndex((f: any) => f.id === sel.id);
+        const nextItem = flags[currentIndex + 1] || flags[0];
+        if (nextItem && nextItem.id !== sel.id) {
+          setActiveId(nextItem.id);
+        } else {
+          setActiveId(null);
+        }
+      },
+      onSettled: () => {
+        toast.dismiss(loadingToast);
+      }
+    });
+  };
+
+  const openEvidence = () => {
+    if (sel.photos?.length > 0) {
+      setSelectedPhoto(sel.photos[0]);
+    } else {
+      toast("No photos attached to this submission");
+    }
+  };
 
   if (!sel) return null;
   return (
@@ -46,8 +105,20 @@ export default function AdminFraud() {
       />
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <KPICard label="Open flags" value="9" sub="₦12,536 on hold" icon={Flag} variant="dark" />
-        <KPICard label="High risk" value="4" sub="Action required" icon={AlertTriangle} variant="gold" />
+        <KPICard 
+          label="Open flags" 
+          value={<span key={flags.length} className="animate-in zoom-in duration-300 inline-block">{flags.length}</span>} 
+          sub={`${formatNaira(flags.reduce((acc: number, f: any) => acc + f.payout, 0))} on hold`} 
+          icon={Flag} 
+          variant="dark" 
+        />
+        <KPICard 
+          label="High risk" 
+          value={<span key={flags.filter((f: any) => f.risk === "high").length} className="animate-in zoom-in duration-300 inline-block">{flags.filter((f: any) => f.risk === "high").length}</span>} 
+          sub="Action required" 
+          icon={AlertTriangle} 
+          variant="gold" 
+        />
         <KPICard label="Avg time to decide" value="4h 12m" sub="Target: < 6h" icon={Clock} variant="primary" />
         <KPICard label="ML precision" value="91%" sub="Last 30 days" icon={Sparkles} />
       </div>
@@ -57,13 +128,50 @@ export default function AdminFraud() {
         <div className="lg:col-span-5">
           <div className="card overflow-hidden">
             <div className="flex flex-wrap items-center gap-2 border-b border-bordergray bg-cream/40 p-3">
-              <button className="btn-outline btn-sm"><Filter size={11} /> All risks</button>
-              <button className="btn-outline btn-sm">All hubs <ChevronDown size={11} /></button>
+              <div className="relative">
+                <select 
+                  className="appearance-none bg-white border border-bordergray rounded-lg px-3 py-1 pr-8 text-xs font-bold text-charcoal focus:outline-none focus:ring-1 focus:ring-primary"
+                  value={riskFilter}
+                  onChange={(e) => setRiskFilter(e.target.value)}
+                >
+                  <option value="all">All risks</option>
+                  <option value="high">High risk</option>
+                  <option value="medium">Medium risk</option>
+                  <option value="low">Low risk</option>
+                </select>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-textgray">
+                  <ChevronDown size={10} />
+                </div>
+              </div>
+
+              <div className="relative">
+                <select 
+                  className="appearance-none bg-white border border-bordergray rounded-lg px-3 py-1 pr-8 text-xs font-bold text-charcoal focus:outline-none focus:ring-1 focus:ring-primary"
+                  value={hubFilter}
+                  onChange={(e) => setHubFilter(e.target.value)}
+                >
+                  <option value="all">All hubs</option>
+                  {uniqueHubs.map(hub => (
+                    <option key={hub} value={hub}>{hub}</option>
+                  ))}
+                </select>
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-textgray">
+                  <ChevronDown size={10} />
+                </div>
+              </div>
               <div className="flex-1" />
               <span className="badge bg-error-50 text-error">{flags.length}</span>
             </div>
             {isLoading ? (
               <div className="p-12 flex justify-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>
+            ) : flags.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="mx-auto w-16 h-16 rounded-full bg-mint-50 flex items-center justify-center text-mint mb-4">
+                  <ShieldCheck size={32} />
+                </div>
+                <h3 className="font-extrabold text-charcoal">All clear</h3>
+                <p className="text-xs text-textgray mt-1">No pending fraud alerts found.</p>
+              </div>
             ) : (
               <div className="divide-y divide-bordergray max-h-[640px] overflow-auto">
                 {flags.map((f: any) => {
@@ -148,11 +256,26 @@ export default function AdminFraud() {
               </div>
 
               <div className="mt-5 grid grid-cols-4 gap-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="aspect-square rounded-xl bg-grad-mint grid place-items-center">
-                    <Camera size={20} className="text-primary/60" />
-                  </div>
-                ))}
+                {sel.photos && sel.photos.length > 0 ? (
+                  sel.photos.map((url: string, i: number) => (
+                    <div 
+                      key={i} 
+                      className="aspect-square rounded-xl overflow-hidden border border-bordergray group relative cursor-pointer"
+                      onClick={() => setSelectedPhoto(url)}
+                    >
+                      <img src={url} alt="Evidence" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-charcoal/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <div className="p-2 bg-white rounded-lg text-primary"><Eye size={16} /></div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="aspect-square rounded-xl bg-grad-mint grid place-items-center">
+                      <Camera size={20} className="text-primary/60" />
+                    </div>
+                  ))
+                )}
               </div>
 
               <div className="mt-5 grid grid-cols-3 gap-3 text-xs">
@@ -162,16 +285,55 @@ export default function AdminFraud() {
               </div>
 
               <div className="mt-6 flex flex-wrap gap-2">
-                <button className="btn-outline"><Eye size={14} /> Open full evidence</button>
-                <button className="btn-ghost"><Flag size={14} /> Escalate</button>
+                <button className="btn-outline" onClick={openEvidence}><Eye size={14} /> Open full evidence</button>
+                <button 
+                  className="btn-ghost" 
+                  onClick={() => handleReview("RESOLVE")}
+                  disabled={isReviewing}
+                >
+                  {isReviewing ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mr-2" /> : <Flag size={14} />}
+                  Escalate
+                </button>
                 <div className="flex-1" />
-                <button className="btn-outline text-error border-error/30 hover:bg-error/5"><X size={14} /> Reject & freeze account</button>
-                <button className="btn-primary"><Check size={14} /> Approve & release ₦{formatNumber(sel.payout)}</button>
+                <button 
+                  className="btn-outline text-error border-error/30 hover:bg-error/5"
+                  onClick={() => handleReview("FREEZE")}
+                  disabled={isReviewing}
+                >
+                  {isReviewing ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-error border-t-transparent mr-2" /> : <X size={14} />}
+                  Reject & freeze account
+                </button>
+                <button 
+                  className="btn-primary"
+                  onClick={() => handleReview("DISMISS")}
+                  disabled={isReviewing}
+                >
+                  {isReviewing ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" /> : <Check size={14} />}
+                  Approve & release {formatNaira(sel.payout)}
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Photo Lightbox */}
+      {selectedPhoto && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-charcoal/90 p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedPhoto(null)}
+        >
+          <button className="absolute right-6 top-6 text-white hover:scale-110 transition-transform">
+            <X size={32} />
+          </button>
+          <img 
+            src={selectedPhoto} 
+            alt="Full Evidence" 
+            className="max-h-[90vh] max-w-full rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </>
   );
 }

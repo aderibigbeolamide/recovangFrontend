@@ -9,6 +9,7 @@ export default function FactoryDashboard() {
   const { data } = useFactoryDashboard();
   if (!data) return null;
 
+  const isApproved = data.isApproved;
   const supply = Array.isArray(data?.supply) ? data.supply : [];
   const orders = Array.isArray(data?.orders) ? data.orders : [];
   const shipments = Array.isArray(data?.shipments) ? data.shipments : [];
@@ -19,30 +20,41 @@ export default function FactoryDashboard() {
   const inTransit = shipments.filter((s: any) => s.status === "in-transit" || s.status === "loading").length;
   const pendingReceipts = receipts.filter((r: any) => r.status === "pending").length;
 
-  const monthly = [
+  const monthly = isApproved ? [
     { label: "W1", value: 22000 },
     { label: "W2", value: 28400 },
     { label: "W3", value: 31200 },
     { label: "W4", value: 36800 },
-  ];
+  ] : [];
+
+  const suppliers = isApproved ? [
+    { hub: "Lagos Aggregator", kg: 32400 },
+    { hub: "Wuse Hub · Abuja", kg: 14200 },
+    { hub: "Port Harcourt Hub", kg: 12800 },
+    { hub: "Bodija Hub · Ibadan", kg: 8200 },
+    { hub: "Sabo Hub · Kano", kg: 6400 },
+  ] : [];
 
   return (
     <>
       <PageHeader
-        eyebrow="Factory portal · Indorama PET Recyclers"
+        eyebrow={`Factory portal · ${data.factory}`}
         title="Inventory & purchasing overview"
-        subtitle="Live stock across every Recovang hub on the African continent."
+        subtitle={isApproved 
+            ? "Live stock across every Recovang hub on the African continent."
+            : "Your factory profile is under review. Complete your KYC to access the marketplace."
+        }
         actions={
           <>
-            <Link to="/factory/marketplace" className="btn-outline"><ShoppingCart size={14} /> Browse marketplace</Link>
-            <Link to="/factory/orders" className="btn-primary"><Boxes size={14} /> View orders</Link>
+            <Link to="/factory/marketplace" className={`btn-outline ${!isApproved ? "opacity-50 pointer-events-none" : ""}`}><ShoppingCart size={14} /> Browse marketplace</Link>
+            <Link to="/factory/orders" className={`btn-primary ${!isApproved ? "opacity-50 pointer-events-none" : ""}`}><Boxes size={14} /> View orders</Link>
           </>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="Available stock" value={formatKg(totalKg, { compact: true })} sub={`${supply.length} categories live`} icon={Boxes} variant="primary" />
-        <KPICard label="Orders value (30d)" value={formatNaira(ordersValue, { compact: true })} sub={`${orders.length} orders`} icon={Coins} variant="gold" trend={{ value: "+18% MoM", direction: "up" }} />
+        <KPICard label="Available stock" value={formatKg(totalKg, { compact: true })} sub={isApproved ? `${supply.length} categories live` : "Awaiting verification"} icon={Boxes} variant="primary" />
+        <KPICard label="Orders value (30d)" value={formatNaira(ordersValue, { compact: true })} sub={`${orders.length} orders`} icon={Coins} variant="gold" trend={isApproved ? { value: "+18% MoM", direction: "up" } : undefined} />
         <KPICard label="In-transit shipments" value={`${inTransit}`} sub={`${shipments.length} total this week`} icon={Truck} />
         <KPICard label="Pending receipts" value={`${pendingReceipts}`} sub="Awaiting QA verification" icon={ClipboardCheck} variant="dark" />
       </div>
@@ -53,29 +65,29 @@ export default function FactoryDashboard() {
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Weekly intake (kg)</div>
               <div className="mt-2 flex items-baseline gap-3">
-                <div className="font-mono text-3xl font-extrabold">{formatKg(monthly[3].value, { compact: true })}</div>
-                <span className="badge-success">+ 18% WoW</span>
+                <div className="font-mono text-3xl font-extrabold">{isApproved ? formatKg(monthly[3]?.value || 0, { compact: true }) : "0kg"}</div>
+                {isApproved && <span className="badge-success">+ 18% WoW</span>}
               </div>
             </div>
           </div>
-          <div className="mt-6"><AreaChart data={monthly} height={220} /></div>
+          <div className="mt-6">
+            {isApproved ? <AreaChart data={monthly} height={220} /> : <div className="h-[220px] flex items-center justify-center text-textgray italic">Intake data will appear here once approved.</div>}
+          </div>
         </div>
         <div className="card p-6 lg:col-span-4">
           <h3 className="text-h4">Top suppliers (by kg)</h3>
-          <ul className="mt-4 space-y-3">
-            {[
-              { hub: "Lagos Aggregator", kg: 32400 },
-              { hub: "Wuse Hub · Abuja", kg: 14200 },
-              { hub: "Port Harcourt Hub", kg: 12800 },
-              { hub: "Bodija Hub · Ibadan", kg: 8200 },
-              { hub: "Sabo Hub · Kano", kg: 6400 },
-            ].map((h) => (
-              <li key={h.hub} className="flex items-center justify-between text-sm">
-                <span className="font-bold">{h.hub}</span>
-                <span className="font-mono text-textgray">{formatKg(h.kg, { compact: true })}</span>
-              </li>
-            ))}
-          </ul>
+          {!isApproved ? (
+              <div className="mt-10 text-center text-textgray italic text-sm">Supplier rankings will be visible after verification.</div>
+          ) : (
+            <ul className="mt-4 space-y-3">
+                {suppliers.map((h) => (
+                  <li key={h.hub} className="flex items-center justify-between text-sm">
+                    <span className="font-bold">{h.hub}</span>
+                    <span className="font-mono text-textgray">{formatKg(h.kg, { compact: true })}</span>
+                  </li>
+                ))}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -89,20 +101,24 @@ export default function FactoryDashboard() {
             </div>
             <Link to="/factory/orders" className="text-sm font-bold text-primary">All orders <ArrowRight size={12} className="inline" /></Link>
           </div>
-          <table className="tbl">
-            <thead><tr><th>Order</th><th>Material</th><th>Weight</th><th className="text-right">Total</th><th>Status</th></tr></thead>
-            <tbody>
-              {orders.slice(0, 5).map((o: any) => (
-                <tr key={o.id}>
-                  <td className="font-mono text-xs">{o.id}</td>
-                  <td className="font-bold">{o.category}</td>
-                  <td className="font-mono">{formatNumber(o.kg)} kg</td>
-                  <td className="text-right"><span className="money">{formatNaira(o.total)}</span></td>
-                  <td><StatusPill status={o.status === "delivered" ? "success" : o.status === "in-transit" || o.status === "processing" ? "pending" : "error"} label={o.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          {!isApproved ? (
+              <div className="p-10 text-center text-textgray italic">No orders found.</div>
+          ) : (
+            <table className="tbl">
+              <thead><tr><th>Order</th><th>Material</th><th>Weight</th><th className="text-right">Total</th><th>Status</th></tr></thead>
+              <tbody>
+                {orders.slice(0, 5).map((o: any) => (
+                  <tr key={o.id}>
+                    <td className="font-mono text-xs">{o.id}</td>
+                    <td className="font-bold">{o.category}</td>
+                    <td className="font-mono">{formatNumber(o.kg)} kg</td>
+                    <td className="text-right"><span className="money">{formatNaira(o.total)}</span></td>
+                    <td><StatusPill status={o.status === "delivered" ? "success" : o.status === "in-transit" || o.status === "processing" ? "pending" : "error"} label={o.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         {/* Pending receipts */}
@@ -111,17 +127,21 @@ export default function FactoryDashboard() {
             <h3 className="text-h4 flex items-center gap-2"><PackageCheck size={16} /> Awaiting receipt</h3>
             <Link to="/factory/receipts" className="text-sm font-bold text-primary">Verify <ArrowRight size={12} className="inline" /></Link>
           </div>
-          <ul className="divide-y divide-bordergray">
-            {receipts.filter((r: any) => r.status === "pending").map((r: any) => (
-              <li key={r.id} className="flex items-center justify-between gap-3 px-6 py-4">
-                <div>
-                  <div className="text-sm font-extrabold">{r.orderId}</div>
-                  <div className="text-xs text-textgray">QA score {r.qaScore} · variance {r.variancePct > 0 ? "+" : ""}{r.variancePct}%</div>
-                </div>
-                <Link to="/factory/receipts" className="btn-primary btn-sm">Verify</Link>
-              </li>
-            ))}
-          </ul>
+          {!isApproved || receipts.filter((r: any) => r.status === "pending").length === 0 ? (
+              <div className="p-10 text-center text-textgray italic">No pending receipts.</div>
+          ) : (
+            <ul className="divide-y divide-bordergray">
+              {receipts.filter((r: any) => r.status === "pending").map((r: any) => (
+                <li key={r.id} className="flex items-center justify-between gap-3 px-6 py-4">
+                  <div>
+                    <div className="text-sm font-extrabold">{r.orderId}</div>
+                    <div className="text-xs text-textgray">QA score {r.qaScore} · variance {r.variancePct > 0 ? "+" : ""}{r.variancePct}%</div>
+                  </div>
+                  <Link to="/factory/receipts" className="btn-primary btn-sm">Verify</Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </>

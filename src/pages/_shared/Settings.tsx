@@ -1,12 +1,38 @@
 import { useState } from "react";
-import { Bell, Building2, Camera, Check, CreditCard, Eye, EyeOff, Globe2, Lock, Mail, Phone, Shield, Smartphone, Trash2, User2 } from "lucide-react";
+import { Bell, Building2, Camera, Check, CreditCard, Eye, EyeOff, FileText, Globe2, Loader2, Lock, Mail, Phone, Shield, ShieldCheck, Smartphone, Trash2, Upload, User2 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { useAuth } from "@/store/auth";
 import { Modal, ConfirmModal } from "@/components/Modal";
 import { cn } from "@/lib/cn";
 
+function DocumentUpload({ label, description }: { label: string; description: string }) {
+  const [file, setFile] = useState<File | null>(null);
+  return (
+    <div>
+      <label className="label">{label}</label>
+      <div className="relative mt-1">
+        <input 
+          type="file" 
+          className="absolute inset-0 z-10 h-full w-full opacity-0 cursor-pointer" 
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+        />
+        <div className="flex h-32 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-bordergray bg-cream/30 transition hover:border-primary/50 hover:bg-cream/50">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-textgray shadow-soft">
+            <Upload size={18} />
+          </div>
+          <div className="mt-3 text-sm font-bold text-charcoal">
+            {file ? file.name : "Click to upload document"}
+          </div>
+          <div className="mt-1 text-[11px] text-textgray">{description}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const TABS = [
   { id: "profile", label: "Profile", icon: User2 },
+  { id: "verification", label: "Verification", icon: ShieldCheck },
   { id: "security", label: "Security", icon: Lock },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "preferences", label: "Preferences", icon: Globe2 },
@@ -122,6 +148,112 @@ export default function SettingsPage() {
               <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
                 <button onClick={saveProfile} className="btn-primary">Save changes</button>
               </div>
+            </div>
+          )}
+
+          {tab === "verification" && (
+            <div className="card p-6 sm:p-8">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <h3 className="text-h4 flex items-center gap-2">
+                    <ShieldCheck size={20} className="text-primary" /> 
+                    Identity Verification
+                  </h3>
+                  <p className="mt-1 text-sm text-textgray">Submit your documents to get verified and unlock full access.</p>
+                </div>
+                <div className={cn(
+                  "rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider",
+                  user?.kycStatus === "COMPLETED" ? "bg-success-50 text-success" : 
+                  user?.kycStatus === "IN_REVIEW" ? "bg-warning-50 text-warning" : "bg-cream text-textgray"
+                )}>
+                  {user?.kycStatus?.replace("_", " ") || "PENDING"}
+                </div>
+              </div>
+
+              {user?.kycStatus === "COMPLETED" ? (
+                <div className="rounded-2xl border border-success/20 bg-success-50 p-6 text-center">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-success text-white">
+                    <Check size={24} />
+                  </div>
+                  <div className="text-lg font-extrabold text-success">You're Verified!</div>
+                  <p className="mt-1 text-sm text-success/80">Your account is fully verified. You have unlimited access to all features.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {user?.role === "collector" && (
+                    <div className="grid gap-6">
+                      <Field label="National ID Number (NIN)" icon={Shield}>
+                        <input 
+                          className="input font-mono" 
+                          placeholder="11-digit NIN" 
+                          maxLength={11}
+                          defaultValue={(user as any)?.nin || ""}
+                        />
+                      </Field>
+                      <DocumentUpload 
+                        label="Upload NIN Slip / ID Card" 
+                        description="JPEG, PNG or PDF (Max 5MB)"
+                      />
+                    </div>
+                  )}
+
+                  {(user?.role === "brand" || user?.role === "factory" || user?.role === "logistics") && (
+                    <div className="grid gap-6">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label="RC Number (CAC)" icon={FileText}>
+                          <input className="input" placeholder="RC-1234567" defaultValue={(user as any)?.rcNumber || ""} />
+                        </Field>
+                        <Field label="Tax ID (TIN)" icon={Shield}>
+                          <input className="input" placeholder="TIN-9876543" defaultValue={(user as any)?.tin || ""} />
+                        </Field>
+                      </div>
+                      <DocumentUpload 
+                        label="Certificate of Incorporation" 
+                        description="CAC document clearly showing company name and RC number"
+                      />
+                      {user?.role === "factory" && (
+                        <DocumentUpload 
+                          label="Environmental / Recycling License" 
+                          description="Valid permit from NESREA or State agency"
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {user?.role === "agent" && (
+                    <div className="grid gap-6">
+                      <Field label="Business/Hub Name" icon={Building2}>
+                        <input className="input" placeholder="Official hub name" />
+                      </Field>
+                      <DocumentUpload 
+                        label="Government Issued ID" 
+                        description="Voter's card, Driver's license or International Passport"
+                      />
+                      <DocumentUpload 
+                        label="Hub Location Photo" 
+                        description="Photo clearly showing the front of your hub facility"
+                      />
+                    </div>
+                  )}
+
+                  <div className="rounded-xl border border-primary/10 bg-mint/30 p-4 text-xs text-primary-800">
+                    <strong>Note:</strong> Verification typically takes 24-48 business hours. You'll receive a notification once our team reviews your documents.
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button 
+                      onClick={() => {
+                        updateUser({ kycStatus: "IN_REVIEW" });
+                        flash("Documents submitted for review");
+                        setTab("profile");
+                      }} 
+                      className="btn-primary"
+                    >
+                      Submit for review
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

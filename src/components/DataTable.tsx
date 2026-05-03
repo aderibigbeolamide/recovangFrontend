@@ -27,6 +27,10 @@ interface DataTableProps<T> {
   rowKey: (row: T) => string;
   onRowClick?: (row: T) => void;
   rightActions?: ReactNode;
+  selection?: {
+    selectedIds: string[];
+    onSelectionChange: (ids: string[]) => void;
+  };
 }
 
 export function DataTable<T>({
@@ -40,13 +44,14 @@ export function DataTable<T>({
   rowKey,
   onRowClick,
   rightActions,
+  selection,
 }: DataTableProps<T>) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
-    let rows = data;
+    let rows = data || [];
     if (filter !== "all" && filterPredicate) {
       rows = rows.filter((r) => filterPredicate(r, filter));
     }
@@ -102,6 +107,23 @@ export function DataTable<T>({
         <table className="tbl">
           <thead>
             <tr>
+              {selection && (
+                <th className="w-10">
+                  <input 
+                    type="checkbox" 
+                    className="checkbox"
+                    checked={slice.length > 0 && slice.every(r => selection.selectedIds.includes(rowKey(r)))}
+                    onChange={(e) => {
+                      const currentIds = slice.map(rowKey);
+                      if (e.target.checked) {
+                        selection.onSelectionChange([...new Set([...selection.selectedIds, ...currentIds])]);
+                      } else {
+                        selection.onSelectionChange(selection.selectedIds.filter(id => !currentIds.includes(id)));
+                      }
+                    }}
+                  />
+                </th>
+              )}
               {columns.map((c) => (
                 <th key={c.key} className={c.className}>{c.header}</th>
               ))}
@@ -110,7 +132,7 @@ export function DataTable<T>({
           <tbody>
             {slice.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="py-12 text-center">
+                <td colSpan={columns.length + (selection ? 1 : 0)} className="py-12 text-center">
                   {empty ?? (
                     <div className="flex flex-col items-center gap-2 text-textgray">
                       <Inbox size={28} />
@@ -127,6 +149,23 @@ export function DataTable<T>({
                   className={onRowClick ? "cursor-pointer hover:bg-cream/70" : undefined}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
+                  {selection && (
+                    <td onClick={(e) => e.stopPropagation()} className="w-10">
+                      <input 
+                        type="checkbox" 
+                        className="checkbox"
+                        checked={selection.selectedIds.includes(rowKey(row))}
+                        onChange={(e) => {
+                          const id = rowKey(row);
+                          if (e.target.checked) {
+                            selection.onSelectionChange([...selection.selectedIds, id]);
+                          } else {
+                            selection.onSelectionChange(selection.selectedIds.filter(i => i !== id));
+                          }
+                        }}
+                      />
+                    </td>
+                  )}
                   {columns.map((c) => (
                     <td key={c.key} className={c.className}>{c.render(row)}</td>
                   ))}
@@ -141,7 +180,7 @@ export function DataTable<T>({
         <div className="font-medium">
           Showing <span className="font-bold text-charcoal">{slice.length}</span> of{" "}
           <span className="font-bold text-charcoal">{filtered.length}</span>
-          {filtered.length !== data.length && <> · filtered from {data.length}</>}
+          {data && filtered.length !== data.length && <> · filtered from {data.length}</>}
         </div>
         <div className="flex items-center gap-2">
           <button

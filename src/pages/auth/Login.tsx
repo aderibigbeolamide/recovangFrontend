@@ -4,7 +4,8 @@ import { ArrowLeft, ArrowRight, Eye, EyeOff, Loader2, Lock, Mail } from "lucide-
 import { Logo } from "@/components/Logo";
 import { Blob } from "@/components/illustrations";
 import { useAuth, DEMO_USERS } from "@/store/auth";
-import { login } from "@/services/auth.service";
+import { login, googleLogin } from "@/services/auth.service";
+import { toast } from "react-hot-toast";
 
 export default function Login() {
   const nav = useNavigate();
@@ -38,6 +39,36 @@ export default function Login() {
       setLoading(false);
     }
   }
+
+  const handleGoogleSuccess = async (response: any) => {
+    setLoading(true);
+    try {
+      const { user, token } = await googleLogin(response.credential);
+      setSession(user, token);
+      nav(`/${user.role}/dashboard`, { replace: true });
+      toast.success("Signed in with Google!");
+    } catch (err: any) {
+      setError(err?.response?.data?.message || "Google sign in failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // @ts-ignore
+    if (window.google) {
+      // @ts-ignore
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleSuccess,
+      });
+    }
+  }, []);
+
+  const triggerGoogle = () => {
+    // @ts-ignore
+    window.google.accounts.id.prompt();
+  };
 
   return (
     <AuthShell>
@@ -126,8 +157,8 @@ export default function Login() {
           </span>
         </div>
 
-        <button type="button" className="btn-outline w-full">
-          <span className="grid h-5 w-5 place-items-center rounded-full bg-charcoal text-[10px] font-bold text-accent">G</span>
+        <button type="button" onClick={triggerGoogle} className="btn-outline w-full">
+          <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" className="h-4 w-4 mr-2" alt="" />
           Continue with Google
         </button>
       </form>

@@ -32,14 +32,16 @@ export function PageHeader({
   title,
   subtitle,
   actions,
+  className,
 }: {
   eyebrow?: string;
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between">
+    <div className={cn("mb-6 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between", className)}>
       <div className="max-w-2xl">
         {eyebrow && <Eyebrow className="mb-3">{eyebrow}</Eyebrow>}
         <h1 className="text-h1 font-extrabold text-balance leading-[1.1]">{title}</h1>
@@ -59,13 +61,15 @@ export function KPICard({
   icon: Icon,
   trend,
   variant = "default",
+  className,
 }: {
   label: string;
   value: ReactNode;
   sub?: ReactNode;
   icon?: LucideIcon;
   trend?: { value: string; direction: "up" | "down" | "flat" };
-  variant?: "default" | "primary" | "gold" | "dark";
+  variant?: "default" | "primary" | "gold" | "dark" | "error";
+  className?: string;
 }) {
   const card =
     variant === "primary"
@@ -74,13 +78,15 @@ export function KPICard({
       ? "card-gold"
       : variant === "dark"
       ? "card-dark"
+      : variant === "error"
+      ? "bg-error text-white border-error"
       : "card";
   const iconWrap =
     variant === "default"
       ? "bg-mint text-primary"
       : "bg-white/15 text-white";
   return (
-    <div className={cn(card, "relative p-3.5 sm:p-5 overflow-hidden")}>
+    <div className={cn(card, "relative p-3.5 sm:p-5 overflow-hidden", className)}>
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className={cn("text-[11px] font-bold uppercase tracking-widest", variant === "default" ? "text-textgray" : "text-white/70")}>
@@ -130,9 +136,11 @@ export function KPICard({
 export function StatusPill({
   status,
   label,
+  className,
 }: {
   status: "success" | "pending" | "error" | "info" | "neutral" | "warning" | "default";
   label?: string;
+  className?: string;
 }) {
   const map = {
     success: { cls: "bg-success-50 text-success", dot: "bg-success" },
@@ -145,7 +153,7 @@ export function StatusPill({
   };
   const m = map[status];
   return (
-    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide", m.cls)}>
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide", m.cls, className)}>
       <span className={cn("h-1.5 w-1.5 rounded-full", m.dot)} />
       {label ?? status}
     </span>
@@ -159,14 +167,16 @@ export function Empty({
   title,
   body,
   cta,
+  className,
 }: {
   icon?: LucideIcon;
   title: string;
   body?: string;
   cta?: ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="card flex flex-col items-center gap-3 p-12 text-center">
+    <div className={cn("card flex flex-col items-center gap-3 p-12 text-center", className)}>
       {Icon && (
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-mint text-primary">
           <Icon size={22} />
@@ -181,7 +191,7 @@ export function Empty({
 
 /* ---------- Avatar ---------- */
 
-export function Avatar({ letters, name, size = 36, tone = "primary" }: { letters?: string; name?: string; size?: number; tone?: "primary" | "gold" | "dark" }) {
+export function Avatar({ letters, name, size = 36, tone = "primary", className }: { letters?: string; name?: string; size?: number; tone?: "primary" | "gold" | "dark"; className?: string }) {
   const tones = {
     primary: "bg-mint text-primary",
     gold: "bg-accent-50 text-accent-600",
@@ -192,7 +202,7 @@ export function Avatar({ letters, name, size = 36, tone = "primary" }: { letters
     : "?");
   return (
     <div
-      className={cn("flex shrink-0 items-center justify-center rounded-full font-display font-extrabold", tones[tone])}
+      className={cn("flex shrink-0 items-center justify-center rounded-full font-display font-extrabold", tones[tone], className)}
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
       {initials}

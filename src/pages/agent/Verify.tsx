@@ -1,37 +1,96 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { ArrowRight, Camera, Check, ChevronRight, QrCode, Scale, Search, ShieldCheck, Sparkles, X } from "lucide-react";
 import { Avatar, PageHeader } from "@/components/ui";
 import { CategoryIcon } from "@/components/illustrations";
 import { formatNaira } from "@/lib/cn";
+import { useAgentDashboard, usePendingSubmissions, useVerifySubmission, useRejectSubmission } from "@/hooks/useAgent";
+import toast from "react-hot-toast";
 
-const QUEUE = [
-  { id: "RX-2419", name: "Adaeze Nwosu", phone: "+234 803 555 0182", cat: "PET Bottles", est: 4.2, photos: 3, eta: "5 min" },
-  { id: "RX-2418", name: "Tunde Bello", phone: "+234 803 555 0211", cat: "Cardboard", est: 6.0, photos: 2, eta: "12 min" },
-  { id: "RX-2417", name: "Maryam Sani", phone: "+234 803 555 0344", cat: "Aluminium Cans", est: 1.8, photos: 4, eta: "Arrived" },
-  { id: "RX-2416", name: "Joy Eze", phone: "+234 803 555 0455", cat: "Mixed Paper", est: 3.4, photos: 1, eta: "8 min" },
-  { id: "RX-2415", name: "Wale Aboderin", phone: "+234 803 555 0566", cat: "Glass Bottles", est: 9.2, photos: 2, eta: "15 min" },
-  { id: "RX-2414", name: "Aisha Yusuf", phone: "+234 803 555 0677", cat: "PET Bottles", est: 5.6, photos: 3, eta: "20 min" },
-  { id: "RX-2413", name: "Chinedu Okeke", phone: "+234 803 555 0788", cat: "E-Waste", est: 0.8, photos: 5, eta: "—" },
-];
-
-const RATES: Record<string, number> = {
-  "PET Bottles": 200, "Cardboard": 80, "Aluminium Cans": 600, "Mixed Paper": 60, "Glass Bottles": 30, "E-Waste": 1200,
-};
+import { QRScanner } from "@/components/QRScanner";
 
 export default function AgentVerify() {
-  const [active, setActive] = useState(QUEUE[0].id);
-  const [actualKg, setActualKg] = useState(4.2);
-  const sel = QUEUE.find((q) => q.id === active)!;
-  const rate = RATES[sel.cat];
+  const [searchParams] = useSearchParams();
+  const { data: dashboardData } = useAgentDashboard();
+  const { data: pending, isLoading } = usePendingSubmissions();
+  const verifyMutation = useVerifySubmission();
+  const rejectMutation = useRejectSubmission();
+
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [actualKg, setActualKg] = useState<number>(0);
+  const [showRejectPanel, setShowRejectPanel] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+
+  const QUEUE = pending || [];
+  const selected = QUEUE.find((q: any) => q.id === activeId) || QUEUE[0];
+
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (id) setActiveId(id);
+    else if (QUEUE.length > 0 && !activeId) setActiveId(QUEUE[0].id);
+  }, [searchParams, QUEUE]);
+
+  useEffect(() => {
+    if (selected) {
+        setActualKg(Number(selected.totalWeightKg));
+    }
+  }, [selected]);
+
+  if (isLoading) return <div className="p-20 text-center font-bold">Loading verifier...</div>;
+
+  const handleScan = (id: string) => {
+    // Check if ID exists in queue
+    const match = QUEUE.find((q: any) => q.id === id || q.id.slice(0, 8) === id);
+    if (match) {
+        setActiveId(match.id);
+        toast.success(`Found drop for ${match.collector.user.firstName}`);
+    } else {
+        toast.error("Drop not found in queue");
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!selected) return;
+    try {
+        await verifyMutation.mutateAsync({
+            id: selected.id,
+            items: selected.items.map((i: any) => ({
+                itemId: i.id,
+                actualWeightKg: actualKg
+            }))
+        });
+        toast.success("Verification successful! Payout sent.");
+    } catch (err: any) {
+        toast.error(err.response?.data?.message || "Verification failed");
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selected || !rejectReason) return;
+    try {
+        await rejectMutation.mutateAsync({ id: selected.id, reason: rejectReason });
+        toast.success("Submission rejected");
+        setShowRejectPanel(false);
+        setRejectReason("");
+    } catch (err: any) {
+        toast.error("Rejection failed");
+    }
+  };
+
+  // Mock rate for display
+  const rate = 200; 
   const payout = Math.round(actualKg * rate);
 
   return (
     <>
+      {showScanner && <QRScanner onScan={handleScan} onClose={() => setShowScanner(false)} />}
+      
       <PageHeader
         eyebrow="Verify drops"
         title="Drop verifier"
-        subtitle="Scan QR, weigh, snap, confirm. Average verification time today: 47 seconds."
-        actions={<button className="btn-primary"><QrCode size={14} /> Scan QR</button>}
+        subtitle="Scan QR, weigh, snap, confirm. Real-time payouts to collector wallets."
+        actions={<button onClick={() => setShowScanner(true)} className="btn-primary"><QrCode size={14} /> Scan QR</button>}
       />
 
       <div className="grid gap-6 lg:grid-cols-12">
@@ -40,26 +99,30 @@ export default function AgentVerify() {
           <div className="card p-3">
             <div className="relative mb-2">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-textgray" />
-              <input className="input h-9 pl-9 text-sm" placeholder="Search by name, phone or drop ID" />
+              <input className="input h-9 pl-9 text-sm" placeholder="Search by name or drop ID" />
             </div>
-            <div className="space-y-2">
-              {QUEUE.map((q) => (
+            <div className="space-y-2 max-h-[600px] overflow-y-auto">
+              {QUEUE.length === 0 ? (
+                  <div className="p-10 text-center text-sm text-textgray">All caught up! No pending drops.</div>
+              ) : QUEUE.map((q: any) => (
                 <button
                   key={q.id}
-                  onClick={() => { setActive(q.id); setActualKg(q.est); }}
+                  onClick={() => setActiveId(q.id)}
                   className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
-                    active === q.id ? "border-primary bg-mint" : "border-transparent hover:bg-cream"
+                    activeId === q.id ? "border-primary bg-mint" : "border-transparent hover:bg-cream"
                   }`}
                 >
-                  <Avatar name={q.name} size={40} />
+                  <div className="h-10 w-10 rounded-full bg-cream flex items-center justify-center font-bold text-primary">
+                    {q.collector.user.firstName.charAt(0)}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-extrabold">{q.name}</span>
-                      <span className="font-mono text-[10px] text-primary">{q.id}</span>
+                      <span className="truncate text-sm font-extrabold">{q.collector.user.firstName} {q.collector.user.lastName}</span>
+                      <span className="font-mono text-[10px] text-primary">{q.id.slice(0, 8)}</span>
                     </div>
-                    <div className="text-xs text-textgray">{q.cat} · ~{q.est}kg</div>
+                    <div className="text-xs text-textgray">{q.items[0]?.wasteCategory.name || "Mixed"} · ~{q.totalWeightKg}kg</div>
                   </div>
-                  <span className={`badge ${q.eta === "Arrived" ? "badge-success" : "bg-cream text-textgray"}`}>{q.eta}</span>
+                  <span className="badge badge-success">Arrived</span>
                 </button>
               ))}
             </div>
@@ -67,14 +130,17 @@ export default function AgentVerify() {
         </div>
 
         {/* Verifier */}
+        {selected ? (
         <div className="lg:col-span-7">
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-bordergray bg-cream/40 p-6">
               <div className="flex items-center gap-3">
-                <Avatar name={sel.name} size={48} />
+                 <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center font-bold text-white text-xl">
+                    {selected.collector.user.firstName.charAt(0)}
+                  </div>
                 <div>
-                  <div className="font-extrabold text-charcoal">{sel.name}</div>
-                  <div className="text-xs text-textgray">{sel.phone} · Drop {sel.id}</div>
+                  <div className="font-extrabold text-charcoal">{selected.collector.user.firstName} {selected.collector.user.lastName}</div>
+                  <div className="text-xs text-textgray">{selected.collector.user.phoneNumber} · Drop {selected.id.slice(0, 12)}</div>
                 </div>
               </div>
               <span className="badge-mint inline-flex items-center gap-1"><ShieldCheck size={12} /> Verified collector</span>
@@ -84,16 +150,16 @@ export default function AgentVerify() {
               <div className="grid items-stretch gap-5 sm:grid-cols-2">
                 <div className="rounded-2xl border border-bordergray bg-cream p-5">
                   <div className="flex items-center gap-3">
-                    <CategoryIcon category={sel.cat} size={48} />
+                    <CategoryIcon category={selected.items?.[0]?.wasteCategory?.name} size={48} />
                     <div>
                       <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Material</div>
-                      <div className="text-base font-extrabold">{sel.cat}</div>
-                      <div className="font-mono text-xs text-primary">{formatNaira(rate)}/kg</div>
+                      <div className="text-base font-extrabold">{selected.items?.[0]?.wasteCategory?.name || "Mixed Material"}</div>
+                      <div className="font-mono text-xs text-primary">₦200/kg (standard)</div>
                     </div>
                   </div>
                   <div className="mt-4 flex items-baseline justify-between border-t border-bordergray pt-3">
                     <span className="text-xs text-textgray">Collector estimated</span>
-                    <span className="font-mono font-extrabold">{sel.est} kg</span>
+                    <span className="font-mono font-extrabold">{selected.totalWeightKg} kg</span>
                   </div>
                 </div>
 
@@ -112,46 +178,95 @@ export default function AgentVerify() {
                     />
                     <button onClick={() => setActualKg((k) => k + 0.1)} className="grid h-10 w-10 place-items-center rounded-xl border border-bordergray bg-white">+</button>
                   </div>
-                  <div className="mt-2 text-center text-xs text-textgray">Auto-pulled from scale Bluetooth</div>
+                  <div className="mt-2 text-center text-xs text-textgray">Confirm weight from physical scale</div>
                 </div>
               </div>
 
               {/* Photos */}
               <div className="mt-5">
                 <div className="mb-3 flex items-center justify-between">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Photos · {sel.photos} attached</div>
-                  <button className="btn-outline btn-sm"><Camera size={12} /> Add photo</button>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Scale Proof · Required</div>
+                  <button className="btn-outline btn-sm"><Camera size={12} /> Snap scale</button>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={i} className={`aspect-square rounded-xl ${i < sel.photos ? "bg-grad-mint" : "border-2 border-dashed border-bordergray bg-cream"} grid place-items-center`}>
-                      {i < sel.photos ? <Camera size={18} className="text-primary" /> : <span className="text-xs text-textgray/50">—</span>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Payout summary */}
-              <div className="card-dark mt-5 flex items-center gap-5 p-5">
-                <div className="flex-1">
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-accent">Pay collector</div>
-                  <div className="mt-1 font-mono text-3xl font-extrabold text-white">
-                    <span className="text-accent">₦</span>{payout.toLocaleString("en-NG")}
+                  <div className="aspect-square rounded-xl border-2 border-dashed border-bordergray bg-cream grid place-items-center cursor-pointer hover:border-primary transition">
+                    <Camera size={18} className="text-textgray" />
                   </div>
-                  <div className="mt-1 text-[11px] text-white/60">{actualKg.toFixed(1)} kg × {formatNaira(rate)}/kg · Hub commission ₦{Math.round(payout * 0.06)}</div>
                 </div>
-                <button className="btn-gold btn-lg">
-                  Approve & pay <ArrowRight size={16} />
-                </button>
               </div>
 
-              <div className="mt-3 flex justify-between text-xs">
-                <button className="font-bold text-error hover:underline inline-flex items-center gap-1"><X size={12} /> Reject (with reason)</button>
-                <button className="font-bold text-textgray hover:underline">Save & next <ChevronRight size={12} className="inline" /></button>
-              </div>
+              {showRejectPanel ? (
+                <div className="mt-5 rounded-2xl border-2 border-error/20 bg-error/5 p-5 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-error">Rejection Reason</div>
+                    <button onClick={() => setShowRejectPanel(false)} className="text-textgray hover:text-charcoal"><X size={16} /></button>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {["Contaminated", "Wrong material", "Incorrect weight", "Underage collector"].map(r => (
+                      <button 
+                        key={r}
+                        onClick={() => setRejectReason(r)}
+                        className={`rounded-full px-3 py-1.5 text-[10px] font-bold border transition ${
+                          rejectReason === r ? "bg-error text-white border-error" : "bg-white text-error border-error/30 hover:bg-error/10"
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Enter detailed reason for rejection..."
+                    className="input min-h-[80px] w-full py-3 text-sm"
+                  />
+                  
+                  <div className="mt-4 flex gap-3">
+                    <button 
+                      onClick={handleReject}
+                      disabled={!rejectReason || rejectMutation.isPending}
+                      className="btn-error flex-1"
+                    >
+                      {rejectMutation.isPending ? "Rejecting..." : "Confirm Rejection"}
+                    </button>
+                    <button onClick={() => setShowRejectPanel(false)} className="btn-outline flex-1">Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="card-dark mt-5 flex items-center gap-5 p-5">
+                    <div className="flex-1">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-accent">Wallet payout</div>
+                      <div className="mt-1 font-mono text-3xl font-extrabold text-white">
+                        <span className="text-accent">₦</span>{payout.toLocaleString("en-NG")}
+                      </div>
+                      <div className="mt-1 text-[11px] text-white/60">{actualKg.toFixed(1)} kg × ₦200/kg · Verified by {dashboardData?.agent?.name}</div>
+                    </div>
+                    <button 
+                        disabled={verifyMutation.isPending}
+                        onClick={handleVerify}
+                        className="btn-gold btn-lg"
+                    >
+                      {verifyMutation.isPending ? "Processing..." : "Approve & Pay"} <ArrowRight size={16} />
+                    </button>
+                  </div>
+
+                  <div className="mt-3 flex justify-between text-xs">
+                    <button onClick={() => setShowRejectPanel(true)} className="font-bold text-error hover:underline inline-flex items-center gap-1"><X size={12} /> Reject drop</button>
+                    <button className="font-bold text-textgray hover:underline">Skip for now <ChevronRight size={12} className="inline" /></button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
+        ) : (
+            <div className="lg:col-span-7 card p-20 text-center text-textgray italic">
+                Select a drop from the queue to start verification.
+            </div>
+        )}
       </div>
     </>
   );
