@@ -18,7 +18,7 @@ export default function LogisticsProfile() {
   if (isLoading || !data) return <div className="p-20 text-center font-bold">Loading profile...</div>;
 
   const isApproved = data.isApproved;
-  const displayName = isApproved ? "GreenWheels Nigeria Ltd." : `${user?.firstName} ${user?.lastName}`;
+  const displayName = isApproved ? "GreenWheels Nigeria Ltd." : user?.name || "New Partner";
   const displaySubtitle = isApproved 
     ? "Operator profile, drivers, payouts and compliance — your control panel as a Recovang logistics partner."
     : "Your logistics partner profile is currently under review. Complete your KYC below to get verified.";
@@ -41,7 +41,7 @@ export default function LogisticsProfile() {
                 {isApproved ? <ShieldCheck size={11} /> : <Shield size={11} />}
                 {isApproved ? "Tier-1 verified partner" : "Verification pending"}
             </span>
-            <h2 className="mt-4 font-display text-4xl font-extrabold text-white">{isApproved ? "GreenWheels Nigeria" : user?.firstName + " (Partner)"}</h2>
+            <h2 className="mt-4 font-display text-4xl font-extrabold text-white">{isApproved ? "GreenWheels Nigeria" : (user?.name?.split(" ")[0] || "New") + " (Partner)"}</h2>
             <p className="mt-2 text-white/70">
                 {isApproved 
                     ? "Lagos-based fleet operator. Partner since Aug 2024. Specialising in inter-hub material movement."
@@ -81,11 +81,11 @@ export default function LogisticsProfile() {
         <div className="card p-6 lg:col-span-7">
           <h3 className="text-h4">Company information</h3>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Field label="Legal name" value={isApproved ? "GreenWheels Nigeria Ltd." : user?.firstName + " " + user?.lastName} />
+            <Field label="Legal name" value={isApproved ? "GreenWheels Nigeria Ltd." : user?.name || ""} />
             <Field label="RC number" value={isApproved ? "RC 1948-2204" : "Pending verification"} />
             <Field label="Tax ID" value={isApproved ? "00482-019-2014" : "Pending verification"} />
             <Field label="Year founded" value={isApproved ? "2018" : "—"} />
-            <Field label="Phone" value={user?.phoneNumber || "+234..."} icon={Phone} />
+            <Field label="Phone" value={user?.phone || "+234..."} icon={Phone} />
             <Field label="Email" value={user?.email || ""} icon={Mail} />
             <Field label="HQ address" value={isApproved ? "14 Kudirat Abiola Way, Oregun" : "—"} icon={MapPin} />
             <Field label="State" value={isApproved ? "Lagos State" : "—"} />
@@ -108,14 +108,14 @@ export default function LogisticsProfile() {
           <div className="card p-6">
             <h4 className="text-h4">Primary contact</h4>
             <div className="mt-4 flex items-center gap-3">
-              <Avatar name={isApproved ? "Tunde Bakare" : user?.firstName + " " + user?.lastName} size={48} />
+              <Avatar name={isApproved ? "Tunde Bakare" : user?.name || "User"} size={48} />
               <div className="flex-1">
-                <div className="font-extrabold">{isApproved ? "Tunde Bakare" : user?.firstName + " " + user?.lastName}</div>
+                <div className="font-extrabold">{isApproved ? "Tunde Bakare" : user?.name || "User"}</div>
                 <div className="text-xs text-textgray">{isApproved ? "CEO & Operations Lead" : "Logistics Partner"}</div>
               </div>
             </div>
             <div className="mt-3 space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-textgray"><Phone size={13} className="text-primary" /> {user?.phoneNumber || "—"}</div>
+              <div className="flex items-center gap-2 text-textgray"><Phone size={13} className="text-primary" /> {user?.phone || "—"}</div>
               <div className="flex items-center gap-2 text-textgray"><Mail size={13} className="text-primary" /> {user?.email}</div>
             </div>
           </div>

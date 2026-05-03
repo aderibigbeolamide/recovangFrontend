@@ -3,8 +3,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Activity, Award, BadgeCheck, Bell, Boxes, Building2, ClipboardList, Coins, FileText, FileWarning,
-  Flag, Gauge, Gift, History, LayoutGrid, Leaf, MapPin, Package, PackageCheck, QrCode, Recycle, Receipt,
-  Repeat, ScrollText, Settings, Settings2, ShieldCheck, ShoppingCart, Sparkles, Target, Truck, Upload, User2, Users, Wallet,
+  Flag, Gauge, Gift, Globe, History, LayoutGrid, Leaf, MapPin, Package, PackageCheck, QrCode, Recycle, Receipt,
+  Repeat, ScrollText, Server, Settings, Settings2, ShieldCheck, ShoppingCart, Sparkles, Target, Truck, Upload, User2, Users, Wallet,
 } from "lucide-react";
 
 import PublicLayout from "@/components/PublicLayout";
@@ -64,6 +64,13 @@ import AdminPayouts from "@/pages/admin/Payouts";
 import AdminSettings from "@/pages/admin/Settings";
 import AdminBrandImpact from "@/pages/admin/BrandImpact";
 
+import SuperAdminDashboard from "@/pages/super-admin/Dashboard";
+import SuperAdminStaff from "@/pages/super-admin/Staff";
+import SuperAdminTreasury from "@/pages/super-admin/Treasury";
+import SuperAdminSystemHealth from "@/pages/super-admin/SystemHealth";
+import SuperAdminRegionalPricing from "@/pages/super-admin/RegionalPricing";
+import SuperAdminPartners from "@/pages/super-admin/Partners";
+
 import BrandDashboard from "@/pages/brand/Dashboard";
 import BrandCompliance from "@/pages/brand/Compliance";
 import BrandPayments from "@/pages/brand/Payments";
@@ -106,6 +113,7 @@ const logisticsNav: NavItem[] = [
   { to: "/logistics/fleet", label: "Fleet", icon: <Truck size={15} /> },
   { to: "/logistics/profile", label: "Profile", icon: <User2 size={15} /> },
 ];
+
 const getAdminNav = (user: any, portalBase: string): NavItem[] => {
   const isSuper = user?.role?.toLowerCase() === "super_admin";
   const permissions = user?.permissions || [];
@@ -114,6 +122,11 @@ const getAdminNav = (user: any, portalBase: string): NavItem[] => {
   const nav: NavItem[] = [
     { to: `${portalBase}/dashboard`, label: "Dashboard", icon: <Activity size={15} /> },
   ];
+
+  if (isSuper) {
+    nav.push({ to: `${portalBase}/staff`, label: "Admin team", icon: <ShieldCheck size={15} /> });
+    nav.push({ to: `${portalBase}/treasury`, label: "Treasury", icon: <Wallet size={15} /> });
+  }
 
   if (has(PERMISSIONS.USERS_VIEW) || has(PERMISSIONS.USERS_MANAGE) || has(PERMISSIONS.HUBS_VIEW) || has(PERMISSIONS.HUBS_MANAGE) || has("MANAGE_USERS") || has("MANAGE_HUBS")) {
     nav.push({ to: `${portalBase}/management`, label: "Management", icon: <Users size={15} /> });
@@ -128,7 +141,12 @@ const getAdminNav = (user: any, portalBase: string): NavItem[] => {
     nav.push({ to: `${portalBase}/brand-impact`, label: "Brand impact", icon: <Leaf size={15} /> });
   }
 
-  if (has(PERMISSIONS.PRICING_MANAGE) || has("MANAGE_PRICING")) {
+  if (isSuper) {
+    nav.push({ to: `${portalBase}/pricing`, label: "Regional pricing", icon: <Coins size={15} /> });
+    nav.push({ to: `${portalBase}/partners`, label: "Partner network", icon: <Truck size={15} /> });
+    nav.push({ to: `${portalBase}/system-health`, label: "System health", icon: <Server size={15} /> });
+    nav.push({ to: `${portalBase}/operations`, label: "Operations", icon: <Activity size={15} /> });
+  } else if (has(PERMISSIONS.PRICING_MANAGE) || has("MANAGE_PRICING")) {
     nav.push({ to: `${portalBase}/pricing`, label: "Pricing console", icon: <Coins size={15} /> });
   }
 
@@ -136,18 +154,17 @@ const getAdminNav = (user: any, portalBase: string): NavItem[] => {
     nav.push({ to: `${portalBase}/fraud`, label: "Fraud queue", icon: <ShieldCheck size={15} /> });
   }
 
-  // Audit logs for ALL admins
   nav.push({ to: `${portalBase}/audit-logs`, label: "Audit logs", icon: <ScrollText size={15} /> });
 
   if (isSuper) {
     nav.push({ to: `${portalBase}/settings`, label: "System settings", icon: <Settings2 size={15} /> });
   }
 
-  // Personal settings for ALL admins
   nav.push({ to: `${portalBase}/profile-settings`, label: "My Settings", icon: <User2 size={15} /> });
 
   return nav;
 };
+
 const brandNav: NavItem[] = [
   { to: "/brand/dashboard", label: "Dashboard", icon: <LayoutGrid size={15} /> },
   { to: "/brand/compliance", label: "Compliance", icon: <Recycle size={15} /> },
@@ -165,27 +182,25 @@ const factoryNav: NavItem[] = [
   { to: "/factory/profile", label: "Plant profile", icon: <Building2 size={15} /> },
 ];
 
-function Protected({ role, children }: { role: string; children: JSX.Element }) {
+function Protected({ allow, children }: { allow: string | string[]; children: JSX.Element }) {
   const { token, user } = useAuth();
-  
   if (!token) return <Navigate to="/auth/login" replace />;
   if (!user) return <div className="flex h-screen items-center justify-center bg-cream font-bold text-primary">Loading session…</div>;
 
+  const allowed = (Array.isArray(allow) ? allow : [allow]).map((r) => r.toLowerCase());
   const userRole = user.role.toLowerCase();
-  const targetRole = role.toLowerCase();
+  if (allowed.includes(userRole)) return children;
+  // Super Admin can access /admin/* routes (it's a superset).
+  if (allowed.includes("admin") && userRole === "super_admin") return children;
 
-  if (userRole !== targetRole) {
-    console.warn(`Role mismatch: expected ${targetRole}, got ${userRole}`);
-    return <Navigate to="/auth/login" replace />;
-  }
-  
-  return children;
+  console.warn(`Role mismatch: expected one of ${allowed.join(",")}, got ${userRole}`);
+  return <Navigate to="/auth/login" replace />;
 }
 
-function AdminPortalWrapper({ brand, portalBase }: { brand: string; portalBase: string }) {
+function AdminPortalWrapper({ brand, portalBase, brandTone = "primary" }: { brand: string; portalBase: string; brandTone?: "primary" | "gold" | "dark" }) {
   const { user } = useAuth();
   const nav = getAdminNav(user, portalBase);
-  return <PortalShell brand={brand} nav={nav} portalBase={portalBase} />;
+  return <PortalShell brand={brand} nav={nav} portalBase={portalBase} brandTone={brandTone} />;
 }
 
 export default function App() {
@@ -222,7 +237,7 @@ export default function App() {
             {/* COLLECTOR */}
             <Route
               path="collector"
-              element={<Protected role="collector"><PortalShell brand="Collector" nav={collectorNav} portalBase="/collector" /></Protected>}
+              element={<Protected allow="collector"><PortalShell brand="Collector" nav={collectorNav} portalBase="/collector" /></Protected>}
             >
               <Route index element={<Navigate to="/collector/dashboard" replace />} />
               <Route path="dashboard" element={<CollectorDashboard />} />
@@ -242,7 +257,7 @@ export default function App() {
             {/* AGENT */}
             <Route
               path="agent"
-              element={<Protected role="agent"><PortalShell brand="Agent" nav={agentNav} portalBase="/agent" /></Protected>}
+              element={<Protected allow="agent"><PortalShell brand="Agent" nav={agentNav} portalBase="/agent" /></Protected>}
             >
               <Route index element={<Navigate to="/agent/dashboard" replace />} />
               <Route path="dashboard" element={<AgentDashboard />} />
@@ -258,7 +273,7 @@ export default function App() {
             {/* LOGISTICS */}
             <Route
               path="logistics"
-              element={<Protected role="logistics"><PortalShell brand="Logistics" nav={logisticsNav} portalBase="/logistics" /></Protected>}
+              element={<Protected allow="logistics"><PortalShell brand="Logistics" nav={logisticsNav} portalBase="/logistics" /></Protected>}
             >
               <Route index element={<Navigate to="/logistics/dashboard" replace />} />
               <Route path="dashboard" element={<LogisticsDashboard />} />
@@ -269,14 +284,10 @@ export default function App() {
               <Route path="profile-settings" element={<SettingsPage />} />
             </Route>
 
-            {/* ADMIN */}
+            {/* ADMIN — operational scope (Super Admin can also access) */}
             <Route
               path="admin"
-              element={
-                <Protected role="admin">
-                  <AdminPortalWrapper brand="Admin" portalBase="/admin" />
-                </Protected>
-              }
+              element={<Protected allow={["admin", "super_admin"]}><AdminPortalWrapper brand="Admin" portalBase="/admin" /></Protected>}
             >
               <Route index element={<Navigate to="/admin/dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
@@ -291,31 +302,29 @@ export default function App() {
               <Route path="profile-settings" element={<SettingsPage />} />
             </Route>
 
-            {/* SUPER ADMIN */}
+            {/* SUPER ADMIN — god-mode scope */}
             <Route
               path="super_admin"
-              element={
-                <Protected role="super_admin">
-                  <AdminPortalWrapper brand="Super Admin" portalBase="/super_admin" />
-                </Protected>
-              }
+              element={<Protected allow="super_admin"><AdminPortalWrapper brand="Super Admin" portalBase="/super_admin" brandTone="dark" /></Protected>}
             >
               <Route index element={<Navigate to="/super_admin/dashboard" replace />} />
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="management" element={<AdminManagement />} />
-              <Route path="logistics" element={<AdminLogistics />} />
-              <Route path="payouts" element={<AdminPayouts />} />
-              <Route path="pricing" element={<AdminPricing />} />
-              <Route path="fraud" element={<AdminFraud />} />
+              <Route path="dashboard" element={<SuperAdminDashboard />} />
+              <Route path="staff" element={<SuperAdminStaff />} />
+              <Route path="treasury" element={<SuperAdminTreasury />} />
+              <Route path="pricing" element={<SuperAdminRegionalPricing />} />
+              <Route path="partners" element={<SuperAdminPartners />} />
+              <Route path="system-health" element={<SuperAdminSystemHealth />} />
+              <Route path="operations" element={<AdminDashboard />} />
               <Route path="audit-logs" element={<AdminAuditLogs />} />
               <Route path="brand-impact" element={<AdminBrandImpact />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="profile-settings" element={<SettingsPage />} />
             </Route>
 
             {/* BRAND */}
             <Route
               path="brand"
-              element={<Protected role="brand"><PortalShell brand="Brand" nav={brandNav} portalBase="/brand" /></Protected>}
+              element={<Protected allow="brand"><PortalShell brand="Brand" nav={brandNav} portalBase="/brand" /></Protected>}
             >
               <Route index element={<Navigate to="/brand/dashboard" replace />} />
               <Route path="dashboard" element={<BrandDashboard />} />
@@ -331,7 +340,7 @@ export default function App() {
             {/* FACTORY */}
             <Route
               path="factory"
-              element={<Protected role="factory"><PortalShell brand="Factory" nav={factoryNav} portalBase="/factory" /></Protected>}
+              element={<Protected allow="factory"><PortalShell brand="Factory" nav={factoryNav} portalBase="/factory" /></Protected>}
             >
               <Route index element={<Navigate to="/factory/dashboard" replace />} />
               <Route path="dashboard" element={<FactoryDashboard />} />

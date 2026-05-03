@@ -1,5 +1,6 @@
 import { PageHeader, Avatar } from "@/components/ui";
 import { useSettings, useUpdateSetting, useSetup2FA, useVerify2FA, useAuditLogs } from "@/hooks/useAdmin";
+import { useAuth } from "@/store/auth";
 import { Save, Settings2, ShieldAlert, Globe, Percent, Wallet, Info, Lock, CheckCircle2, QrCode, Bell, Zap, Database, History, Search } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Modal } from "@/components/Modal";
