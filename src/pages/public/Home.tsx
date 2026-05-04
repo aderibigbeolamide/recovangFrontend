@@ -128,7 +128,11 @@ function ScrollIndicator() {
 
 export default function Home() {
   return (
-    <div className="page-enter">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
       <Hero />
       <Partners />
       <ImpactStats />
@@ -139,7 +143,7 @@ export default function Home() {
       <Testimonials />
       <BrandCTA />
       <FinalCTA />
-    </div>
+    </motion.div>
   );
 }
 

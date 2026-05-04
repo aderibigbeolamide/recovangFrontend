@@ -226,12 +226,7 @@ function Footer() {
   return (
     <footer className="bg-charcoal text-white">
       <div className="relative overflow-hidden">
-        <img
-          src="https://images.unsplash.com/photo-1582408921715-18e7806365c1?auto=format&fit=crop&w=1400&q=50"
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover opacity-8"
-        />
-        <div className="relative container-page py-20">
+        <div className="container-page py-20">
           <div className="mb-16 grid gap-10 lg:grid-cols-12">
             <div className="lg:col-span-7">
               <h2 className="text-display font-extrabold leading-[0.95] text-balance">
