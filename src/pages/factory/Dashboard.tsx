@@ -1,13 +1,20 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Boxes, ClipboardCheck, Coins, PackageCheck, ShoppingCart, Truck } from "lucide-react";
-import { KPICard, PageHeader, StatusPill } from "@/components/ui";
+import { KPICard, PageHeader, StatusPill, DashboardSkeleton } from "@/components/ui";
 import { AreaChart } from "@/components/charts";
 import { useFactoryDashboard } from "@/hooks/useFactory";
 import { formatNaira, formatKg, formatNumber } from "@/lib/cn";
+import { motion } from "framer-motion";
+
+const fadeUp = (delay = 0) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] as any },
+});
 
 export default function FactoryDashboard() {
   const { data } = useFactoryDashboard();
-  if (!data) return null;
+  if (!data) return <DashboardSkeleton />;
 
   const isApproved = data.isApproved;
   const supply = Array.isArray(data?.supply) ? data.supply : [];
@@ -21,10 +28,8 @@ export default function FactoryDashboard() {
   const pendingReceipts = receipts.filter((r: any) => r.status === "pending").length;
 
   const monthly = isApproved ? [
-    { label: "W1", value: 22000 },
-    { label: "W2", value: 28400 },
-    { label: "W3", value: 31200 },
-    { label: "W4", value: 36800 },
+    { label: "W1", value: 22000 }, { label: "W2", value: 28400 },
+    { label: "W3", value: 31200 }, { label: "W4", value: 36800 },
   ] : [];
 
   const suppliers = isApproved ? [
@@ -40,60 +45,84 @@ export default function FactoryDashboard() {
       <PageHeader
         eyebrow={`Factory portal · ${data.factory}`}
         title="Inventory & purchasing overview"
-        subtitle={isApproved 
+        subtitle={
+          isApproved
             ? "Live stock across every Recovang hub on the African continent."
             : "Your factory profile is under review. Complete your KYC to access the marketplace."
         }
         actions={
           <>
-            <Link to="/factory/marketplace" className={`btn-outline ${!isApproved ? "opacity-50 pointer-events-none" : ""}`}><ShoppingCart size={14} /> Browse marketplace</Link>
-            <Link to="/factory/orders" className={`btn-primary ${!isApproved ? "opacity-50 pointer-events-none" : ""}`}><Boxes size={14} /> View orders</Link>
+            <Link to="/factory/marketplace" className={`btn-outline ${!isApproved ? "opacity-50 pointer-events-none" : ""}`}>
+              <ShoppingCart size={14} /> Browse marketplace
+            </Link>
+            <Link to="/factory/orders" className={`btn-primary ${!isApproved ? "opacity-50 pointer-events-none" : ""}`}>
+              <Boxes size={14} /> View orders
+            </Link>
           </>
         }
       />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KPICard label="Available stock" value={formatKg(totalKg, { compact: true })} sub={isApproved ? `${supply.length} categories live` : "Awaiting verification"} icon={Boxes} variant="primary" />
-        <KPICard label="Orders value (30d)" value={formatNaira(ordersValue, { compact: true })} sub={`${orders.length} orders`} icon={Coins} variant="gold" trend={isApproved ? { value: "+18% MoM", direction: "up" } : undefined} />
-        <KPICard label="In-transit shipments" value={`${inTransit}`} sub={`${shipments.length} total this week`} icon={Truck} />
-        <KPICard label="Pending receipts" value={`${pendingReceipts}`} sub="Awaiting QA verification" icon={ClipboardCheck} variant="dark" />
+        <KPICard index={0} label="Available stock" value={formatKg(totalKg, { compact: true })} sub={isApproved ? `${supply.length} categories live` : "Awaiting verification"} icon={Boxes} variant="primary" />
+        <KPICard index={1} label="Orders value (30d)" value={formatNaira(ordersValue, { compact: true })} sub={`${orders.length} orders`} icon={Coins} variant="gold" trend={isApproved ? { value: "+18% MoM", direction: "up" } : undefined} />
+        <KPICard index={2} label="In-transit shipments" value={`${inTransit}`} sub={`${shipments.length} total this week`} icon={Truck} />
+        <KPICard index={3} label="Pending receipts" value={`${pendingReceipts}`} sub="Awaiting QA verification" icon={ClipboardCheck} variant="dark" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
-        <div className="card p-6 lg:col-span-8">
+        <motion.div {...fadeUp(0.15)} className="card p-6 lg:col-span-8">
           <div className="flex items-start justify-between">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Weekly intake (kg)</div>
               <div className="mt-2 flex items-baseline gap-3">
-                <div className="font-mono text-3xl font-extrabold">{isApproved ? formatKg(monthly[3]?.value || 0, { compact: true }) : "0kg"}</div>
+                <div className="font-mono text-3xl font-extrabold">
+                  {isApproved ? formatKg(monthly[3]?.value || 0, { compact: true }) : "0kg"}
+                </div>
                 {isApproved && <span className="badge-success">+ 18% WoW</span>}
               </div>
             </div>
           </div>
           <div className="mt-6">
-            {isApproved ? <AreaChart data={monthly} height={220} /> : <div className="h-[220px] flex items-center justify-center text-textgray italic">Intake data will appear here once approved.</div>}
+            {isApproved
+              ? <AreaChart data={monthly} height={220} />
+              : (
+                <div className="h-[220px] flex flex-col items-center justify-center gap-3 rounded-2xl bg-cream text-textgray">
+                  <Boxes size={28} className="text-charcoal/20" />
+                  <div className="text-sm italic">Intake data will appear here once approved.</div>
+                </div>
+              )
+            }
           </div>
-        </div>
-        <div className="card p-6 lg:col-span-4">
+        </motion.div>
+
+        <motion.div {...fadeUp(0.2)} className="card p-6 lg:col-span-4">
           <h3 className="text-h4">Top suppliers (by kg)</h3>
           {!isApproved ? (
-              <div className="mt-10 text-center text-textgray italic text-sm">Supplier rankings will be visible after verification.</div>
+            <div className="mt-10 text-center text-textgray italic text-sm">Supplier rankings visible after verification.</div>
           ) : (
             <ul className="mt-4 space-y-3">
-                {suppliers.map((h) => (
-                  <li key={h.hub} className="flex items-center justify-between text-sm">
-                    <span className="font-bold">{h.hub}</span>
-                    <span className="font-mono text-textgray">{formatKg(h.kg, { compact: true })}</span>
-                  </li>
-                ))}
+              {suppliers.map((h, i) => (
+                <motion.li
+                  key={h.hub}
+                  initial={{ opacity: 0, x: 12 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.25 + i * 0.06 }}
+                  className="flex items-center gap-3 rounded-xl bg-cream p-3"
+                >
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-[10px] font-black text-textgray shadow-soft">
+                    {i + 1}
+                  </div>
+                  <span className="flex-1 text-sm font-bold truncate">{h.hub}</span>
+                  <span className="font-mono text-sm text-textgray shrink-0">{formatKg(h.kg, { compact: true })}</span>
+                </motion.li>
+              ))}
             </ul>
           )}
-        </div>
+        </motion.div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
-        {/* Recent orders */}
-        <div className="card overflow-hidden lg:col-span-7">
+        <motion.div {...fadeUp(0.25)} className="card overflow-hidden lg:col-span-7">
           <div className="flex items-center justify-between border-b border-bordergray p-6">
             <div>
               <h3 className="text-h4">Recent orders</h3>
@@ -102,10 +131,12 @@ export default function FactoryDashboard() {
             <Link to="/factory/orders" className="text-sm font-bold text-primary">All orders <ArrowRight size={12} className="inline" /></Link>
           </div>
           {!isApproved ? (
-              <div className="p-10 text-center text-textgray italic">No orders found.</div>
+            <div className="p-12 text-center text-textgray italic">No orders found.</div>
           ) : (
             <table className="tbl">
-              <thead><tr><th>Order</th><th>Material</th><th>Weight</th><th className="text-right">Total</th><th>Status</th></tr></thead>
+              <thead>
+                <tr><th>Order</th><th>Material</th><th>Weight</th><th className="text-right">Total</th><th>Status</th></tr>
+              </thead>
               <tbody>
                 {orders.slice(0, 5).map((o: any) => (
                   <tr key={o.id}>
@@ -113,22 +144,29 @@ export default function FactoryDashboard() {
                     <td className="font-bold">{o.category}</td>
                     <td className="font-mono">{formatNumber(o.kg)} kg</td>
                     <td className="text-right"><span className="money">{formatNaira(o.total)}</span></td>
-                    <td><StatusPill status={o.status === "delivered" ? "success" : o.status === "in-transit" || o.status === "processing" ? "pending" : "error"} label={o.status} /></td>
+                    <td>
+                      <StatusPill
+                        status={o.status === "delivered" ? "success" : o.status === "in-transit" || o.status === "processing" ? "pending" : "error"}
+                        label={o.status}
+                      />
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
-        </div>
+        </motion.div>
 
-        {/* Pending receipts */}
-        <div className="card overflow-hidden lg:col-span-5">
+        <motion.div {...fadeUp(0.3)} className="card overflow-hidden lg:col-span-5">
           <div className="flex items-center justify-between border-b border-bordergray p-6">
             <h3 className="text-h4 flex items-center gap-2"><PackageCheck size={16} /> Awaiting receipt</h3>
             <Link to="/factory/receipts" className="text-sm font-bold text-primary">Verify <ArrowRight size={12} className="inline" /></Link>
           </div>
           {!isApproved || receipts.filter((r: any) => r.status === "pending").length === 0 ? (
-              <div className="p-10 text-center text-textgray italic">No pending receipts.</div>
+            <div className="flex flex-col items-center gap-3 p-12 text-center">
+              <PackageCheck size={28} className="text-charcoal/15" />
+              <div className="text-sm text-textgray italic">No pending receipts.</div>
+            </div>
           ) : (
             <ul className="divide-y divide-bordergray">
               {receipts.filter((r: any) => r.status === "pending").map((r: any) => (
@@ -142,7 +180,7 @@ export default function FactoryDashboard() {
               ))}
             </ul>
           )}
-        </div>
+        </motion.div>
       </div>
     </>
   );

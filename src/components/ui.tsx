@@ -1,9 +1,18 @@
 import { type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 import { ArrowUpRight, ArrowDownRight, type LucideIcon } from "lucide-react";
+import { motion } from "framer-motion";
 
-/* ---------- Section / page header ---------- */
+/* ---------- Framer Motion variants ---------- */
+export const cardFadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: (i: number = 0) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.07, duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
 
+/* ---------- Section wrapper ---------- */
 export function Section({
   children,
   className,
@@ -23,10 +32,12 @@ export function Section({
   return <section className={cn("section", bgs[bg], className)}>{children}</section>;
 }
 
+/* ---------- Eyebrow ---------- */
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
   return <span className={cn("eyebrow eyebrow-dot", className)}>{children}</span>;
 }
 
+/* ---------- Page header ---------- */
 export function PageHeader({
   eyebrow,
   title,
@@ -41,19 +52,27 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={cn("mb-6 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between", className)}>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className={cn("mb-6 flex flex-col gap-4 sm:mb-10 sm:flex-row sm:items-end sm:justify-between", className)}
+    >
       <div className="max-w-2xl">
         {eyebrow && <Eyebrow className="mb-3">{eyebrow}</Eyebrow>}
         <h1 className="text-h1 font-extrabold text-balance leading-[1.1]">{title}</h1>
         {subtitle && <p className="mt-1.5 sm:mt-2 text-sm sm:text-base text-textgray text-pretty">{subtitle}</p>}
       </div>
-      {actions && <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">{actions}</div>}
-    </div>
+      {actions && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          {actions}
+        </div>
+      )}
+    </motion.div>
   );
 }
 
 /* ---------- KPI / stat cards ---------- */
-
 export function KPICard({
   label,
   value,
@@ -62,6 +81,7 @@ export function KPICard({
   trend,
   variant = "default",
   className,
+  index = 0,
 }: {
   label: string;
   value: ReactNode;
@@ -70,6 +90,7 @@ export function KPICard({
   trend?: { value: string; direction: "up" | "down" | "flat" };
   variant?: "default" | "primary" | "gold" | "dark" | "error";
   className?: string;
+  index?: number;
 }) {
   const card =
     variant === "primary"
@@ -79,16 +100,24 @@ export function KPICard({
       : variant === "dark"
       ? "card-dark"
       : variant === "error"
-      ? "bg-error text-white border-error"
+      ? "bg-error text-white border-error rounded-3xl"
       : "card";
+
   const iconWrap =
     variant === "default"
       ? "bg-mint text-primary"
       : "bg-white/15 text-white";
+
   return (
-    <div className={cn(card, "relative p-3.5 sm:p-5 overflow-hidden", className)}>
+    <motion.div
+      custom={index}
+      variants={cardFadeUp}
+      initial="hidden"
+      animate="show"
+      className={cn(card, "relative p-3.5 sm:p-5 overflow-hidden transition hover:-translate-y-0.5 hover:shadow-card", className)}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="flex-1 min-w-0">
           <div className={cn("text-[11px] font-bold uppercase tracking-widest", variant === "default" ? "text-textgray" : "text-white/70")}>
             {label}
           </div>
@@ -96,7 +125,9 @@ export function KPICard({
             {value}
           </div>
           {sub && (
-            <div className={cn("mt-1.5 sm:mt-2 text-[10px] sm:text-xs font-medium", variant === "default" ? "text-textgray" : "text-white/70")}>{sub}</div>
+            <div className={cn("mt-1.5 sm:mt-2 text-[10px] sm:text-xs font-medium truncate", variant === "default" ? "text-textgray" : "text-white/70")}>
+              {sub}
+            </div>
           )}
         </div>
         {Icon && (
@@ -106,20 +137,14 @@ export function KPICard({
         )}
       </div>
       {trend && (
-        <div
-          className={cn(
-            "mt-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold",
-            trend.direction === "up"
-              ? variant === "default"
-                ? "bg-success-50 text-success"
-                : "bg-white/15 text-white"
-              : trend.direction === "down"
-              ? variant === "default"
-                ? "bg-error-50 text-error"
-                : "bg-white/15 text-white"
-              : "bg-charcoal/10 text-charcoal"
-          )}
-        >
+        <div className={cn(
+          "mt-3 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold",
+          trend.direction === "up"
+            ? variant === "default" ? "bg-success-50 text-success" : "bg-white/15 text-white"
+            : trend.direction === "down"
+            ? variant === "default" ? "bg-error-50 text-error" : "bg-white/15 text-white"
+            : "bg-charcoal/10 text-charcoal"
+        )}>
           {trend.direction === "up" ? <ArrowUpRight size={12} /> : trend.direction === "down" ? <ArrowDownRight size={12} /> : null}
           {trend.value}
         </div>
@@ -127,12 +152,52 @@ export function KPICard({
       {variant !== "default" && (
         <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
       )}
+    </motion.div>
+  );
+}
+
+/* ---------- KPI skeleton ---------- */
+export function KPICardSkeleton({ count = 4 }: { count?: number }) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="card p-5 space-y-3">
+          <div className="skeleton h-3 w-20 rounded-full" />
+          <div className="skeleton h-8 w-32 rounded-xl" />
+          <div className="skeleton h-2.5 w-24 rounded-full" />
+        </div>
+      ))}
+    </>
+  );
+}
+
+/* ---------- Dashboard skeleton ---------- */
+export function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="space-y-3">
+        <div className="skeleton h-3 w-32 rounded-full" />
+        <div className="skeleton h-10 w-72 rounded-2xl" />
+        <div className="skeleton h-4 w-96 rounded-full" />
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="card p-5 space-y-3">
+            <div className="skeleton h-3 w-20 rounded-full" />
+            <div className="skeleton h-8 w-24 rounded-xl" />
+            <div className="skeleton h-2.5 w-16 rounded-full" />
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className="card lg:col-span-8 h-72" />
+        <div className="card lg:col-span-4 h-72" />
+      </div>
     </div>
   );
 }
 
 /* ---------- Status pill ---------- */
-
 export function StatusPill({
   status,
   label,
@@ -161,7 +226,6 @@ export function StatusPill({
 }
 
 /* ---------- Empty state ---------- */
-
 export function Empty({
   icon: Icon,
   title,
@@ -190,8 +254,16 @@ export function Empty({
 }
 
 /* ---------- Avatar ---------- */
-
-export function Avatar({ letters, name, size = 36, tone = "primary", className }: { letters?: string; name?: string; size?: number; tone?: "primary" | "gold" | "dark"; className?: string }) {
+export function Avatar({
+  letters, name, photo, size = 36, tone = "primary", className,
+}: {
+  letters?: string;
+  name?: string;
+  photo?: string;
+  size?: number;
+  tone?: "primary" | "gold" | "dark";
+  className?: string;
+}) {
   const tones = {
     primary: "bg-mint text-primary",
     gold: "bg-accent-50 text-accent-600",
@@ -200,6 +272,16 @@ export function Avatar({ letters, name, size = 36, tone = "primary", className }
   const initials = letters ?? (name
     ? name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")
     : "?");
+  if (photo) {
+    return (
+      <img
+        src={photo}
+        alt={name ?? "Avatar"}
+        className={cn("rounded-full object-cover", className)}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   return (
     <div
       className={cn("flex shrink-0 items-center justify-center rounded-full font-display font-extrabold", tones[tone], className)}
@@ -207,5 +289,27 @@ export function Avatar({ letters, name, size = 36, tone = "primary", className }
     >
       {initials}
     </div>
+  );
+}
+
+/* ---------- Section card wrapper with animation ---------- */
+export function AnimatedCard({
+  children,
+  className,
+  delay = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  delay?: number;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   );
 }

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Lato:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,700&family=Lato:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -13,6 +13,7 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
   }
   body {
     @apply bg-cream text-charcoal font-sans overflow-x-hidden;
@@ -46,19 +47,19 @@
     @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap w-full sm:w-auto;
   }
   .btn-primary {
-    @apply btn bg-primary text-white shadow-glow hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0;
+    @apply btn bg-primary text-white shadow-glow hover:bg-primary-700 hover:-translate-y-0.5 active:translate-y-0 active:scale-95;
   }
   .btn-gold {
-    @apply btn bg-grad-gold text-charcoal shadow-gold hover:-translate-y-0.5 active:translate-y-0;
+    @apply btn bg-grad-gold text-charcoal shadow-gold hover:-translate-y-0.5 active:translate-y-0 active:scale-95;
   }
   .btn-dark {
-    @apply btn bg-charcoal text-white hover:bg-charcoal-700 hover:-translate-y-0.5;
+    @apply btn bg-charcoal text-white hover:bg-charcoal-700 hover:-translate-y-0.5 active:scale-95;
   }
   .btn-outline {
-    @apply btn border border-charcoal/15 bg-white text-charcoal hover:border-primary hover:text-primary;
+    @apply btn border border-charcoal/15 bg-white text-charcoal hover:border-primary hover:text-primary active:scale-95;
   }
   .btn-ghost {
-    @apply btn text-charcoal/80 hover:bg-charcoal/5;
+    @apply btn text-charcoal/80 hover:bg-charcoal/5 active:scale-95;
   }
   .btn-sm { @apply px-3.5 py-2 text-xs; }
   .btn-lg { @apply px-7 py-4 text-base; }
@@ -79,10 +80,13 @@
   .card-gold {
     @apply rounded-3xl bg-grad-gold text-charcoal shadow-gold overflow-hidden;
   }
+  .card-glass {
+    @apply rounded-3xl border border-white/20 bg-white/10 backdrop-blur-md text-white overflow-hidden;
+  }
 
   /* Inputs */
   .input {
-    @apply h-11 w-full rounded-xl border border-bordergray bg-white px-4 text-sm text-charcoal placeholder:text-textgray/70 outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/10;
+    @apply h-12 w-full rounded-2xl border border-bordergray bg-white px-4 text-sm text-charcoal placeholder:text-textgray/60 outline-none transition-all duration-200 focus:border-primary focus:ring-4 focus:ring-primary/10;
   }
   .label { @apply mb-1.5 block text-xs font-bold uppercase tracking-wide text-textgray; }
   .help { @apply mt-1 text-xs text-textgray; }
@@ -130,7 +134,7 @@
 
   /* Sidebar nav item */
   .sb-item {
-    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/60 transition-all hover:bg-white/5 hover:text-white;
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold text-white/60 transition-all duration-200 hover:bg-white/10 hover:text-white;
   }
   .sb-item-active {
     @apply bg-white/10 text-white shadow-inset;
@@ -147,15 +151,27 @@
   /* Table */
   .tbl { @apply w-full text-left text-sm; }
   .tbl thead th {
-    @apply border-b border-bordergray px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-textgray whitespace-nowrap;
+    @apply border-b border-bordergray px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-textgray whitespace-nowrap bg-cream/40;
   }
   .tbl tbody td {
-    @apply border-b border-bordergray/60 px-4 py-3.5 text-sm align-middle whitespace-nowrap;
+    @apply border-b border-bordergray/60 px-4 py-4 text-sm align-middle whitespace-nowrap;
   }
-  .tbl tbody tr:hover { @apply bg-cream/60; }
+  .tbl tbody tr:hover { @apply bg-cream/60 transition-colors; }
   .tbl tbody tr:last-child td { @apply border-b-0; }
-
   .tbl-container { @apply w-full overflow-x-auto rounded-xl; }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply animate-pulse rounded-xl bg-charcoal/5;
+  }
+
+  /* Glass morphism */
+  .glass {
+    @apply backdrop-blur-xl bg-white/80 border border-white/40;
+  }
+  .glass-dark {
+    @apply backdrop-blur-xl bg-charcoal/80 border border-white/10;
+  }
 }
 
 @layer utilities {
@@ -163,6 +179,9 @@
   .text-pretty { text-wrap: pretty; }
   .mask-fade-b {
     mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  }
+  .mask-fade-t {
+    mask-image: linear-gradient(to top, black 60%, transparent 100%);
   }
   .ring-soft {
     box-shadow: 0 0 0 1px rgba(28,28,46,0.06);
@@ -174,10 +193,37 @@
   .hide-scrollbar::-webkit-scrollbar {
     display: none;
   }
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary via-primary-400 to-accent-500 bg-clip-text text-transparent;
+  }
+  .text-gradient-gold {
+    @apply bg-gradient-to-r from-accent-300 via-accent to-accent-600 bg-clip-text text-transparent;
+  }
+  .inset-shadow {
+    box-shadow: inset 0 2px 8px rgba(28,28,46,0.08);
+  }
 }
 
 /* Scrollbar */
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { @apply rounded-full bg-charcoal/15; }
-::-webkit-scrollbar-thumb:hover { @apply bg-charcoal/25; }
+::-webkit-scrollbar-thumb { @apply rounded-full bg-charcoal/10; }
+::-webkit-scrollbar-thumb:hover { @apply bg-charcoal/20; }
+
+/* Page transition */
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: pageIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Number counter shimmer */
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.count-animate {
+  animation: countUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
