@@ -1,17 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { formatNaira } from "@/lib/cn";
-import { Modal } from "@/components/Modal";
+import { Modal, ConfirmModal } from "@/components/Modal";
 import { useSearchParams } from "react-router-dom";
 
 import { 
   Building2, ChevronDown, Filter, Info, Mail, MoreHorizontal, Plus, Search, 
   Trash2, UserPlus, Users, Wallet, ShieldCheck, Eye, Download, Truck, Shield, MapPin, Phone, Trash, CheckCircle, X,
-  Lock, UserCheck, UserX, ShieldPlus
+  Lock, UserCheck, UserX, ShieldPlus, Boxes, Award
 } from "lucide-react";
 import { 
   useAdminCollectors, useAdminDashboard, useAdmins, useAgents, useCreateAdmin, useHubs, useLogistics, useSuspendUser, useUnsuspendUser, useUpdateAdminPermissions, useImpersonate, useExport, useBulkUserAction,
-  useAgentInviteRequests, useManageAgentInvite
+  useAgentInviteRequests, useManageAgentInvite, useCreateHub,
+  usePendingLocations, useVerifyLocation, useSyncLocations,
+  usePendingOfficialAgents, useApproveOfficialAgent, useDeleteOfficialAgent,
+  useFactories, useBrands
 } from "@/hooks/useAdmin";
 import { formatKg, formatNumber } from "@/lib/cn";
 import { DataTable, type Column } from "@/components/DataTable";
@@ -20,43 +23,93 @@ import { UserDetailDrawer } from "@/components/UserDetailDrawer";
 import { HubDetailDrawer } from "@/components/HubDetailDrawer";
 import { PERMISSION_GROUPS, PERMISSIONS } from "@/constants/permissions";
 import { PermissionGuard } from "@/components/PermissionGuard";
+import locationsData from "@/constants/locations.json";
 
 const TABS = [
   { id: "collectors", label: "Collectors", icon: Users },
   { id: "agents", label: "Agents", icon: ShieldCheck },
   { id: "requests", label: "Hub Requests", icon: ShieldPlus },
+  { id: "recruitment", label: "Recruitment", icon: UserPlus },
   { id: "hubs", label: "Hubs", icon: Building2 },
   { id: "logistics", label: "Logistics", icon: Truck },
+  { id: "locations", label: "Locations", icon: MapPin },
+  { id: "factories", label: "Factories", icon: Boxes },
+  { id: "brands", label: "Brands", icon: Award },
   { id: "staff", label: "Staff", icon: UserPlus },
 ];
+
+const MODULE_CONFIG: Record<string, { label: string; eyebrow: string; tabs: string[] }> = {
+  users: {
+    label: "User Management",
+    eyebrow: "Personnel & Collectors",
+    tabs: ["collectors", "agents", "recruitment", "staff"]
+  },
+  hubs: {
+    label: "Hub Management",
+    eyebrow: "Facilities & Inventory",
+    tabs: ["hubs", "requests"]
+  },
+  logistics: {
+    label: "Logistics Management",
+    eyebrow: "Fleet & Partners",
+    tabs: ["logistics"]
+  },
+  locations: {
+    label: "Location Management",
+    eyebrow: "Regional Mapping",
+    tabs: ["locations"]
+  },
+  factories: {
+    label: "Factory Management",
+    eyebrow: "Downstream Partners",
+    tabs: ["factories"]
+  },
+  brands: {
+    label: "Brand Management",
+    eyebrow: "EPR & Sustainability",
+    tabs: ["brands"]
+  }
+};
 
 const ADMIN_PRESETS = [
   {
     id: "ops",
     name: "Operations Manager",
-    description: "Manage collectors, agents, hubs, and logistics routes.",
+    description: "Full control over hubs, logistics, and agent assignments.",
     icon: Truck,
     color: "text-success",
     bg: "bg-success/10",
-    permissions: [PERMISSIONS.USERS_VIEW, PERMISSIONS.HUBS_VIEW, PERMISSIONS.HUBS_MANAGE, PERMISSIONS.LOGISTICS_MANAGE, PERMISSIONS.AGENTS_VIEW]
+    permissions: [
+      PERMISSIONS.HUBS_VIEW, PERMISSIONS.HUBS_MANAGE, PERMISSIONS.HUBS_INVENTORY,
+      PERMISSIONS.LOGISTICS_MANAGE, PERMISSIONS.AGENTS_VIEW, PERMISSIONS.AGENTS_MANAGE,
+      PERMISSIONS.AGENTS_ASSIGN, PERMISSIONS.USERS_VIEW, PERMISSIONS.FACTORIES_MANAGE,
+      PERMISSIONS.BRANDS_MANAGE, PERMISSIONS.LOCATIONS_MANAGE
+    ]
   },
   {
     id: "compliance",
-    name: "Compliance Officer",
-    description: "Review KYC documents, manage notes, and suspend accounts.",
+    name: "User & KYC Manager",
+    description: "Manage user profiles, verify KYC, and handle communication.",
     icon: ShieldCheck,
     color: "text-info",
     bg: "bg-info/10",
-    permissions: [PERMISSIONS.USERS_VIEW, PERMISSIONS.USERS_KYC, PERMISSIONS.USERS_SUSPEND, PERMISSIONS.USERS_NOTES]
+    permissions: [
+      PERMISSIONS.USERS_VIEW, PERMISSIONS.USERS_MANAGE, PERMISSIONS.USERS_KYC,
+      PERMISSIONS.USERS_SUSPEND, PERMISSIONS.USERS_MESSAGE, PERMISSIONS.USERS_NOTES,
+      PERMISSIONS.AGENTS_VIEW
+    ]
   },
   {
     id: "finance",
-    name: "Finance Officer",
-    description: "Oversee payouts, pricing, and financial reports.",
+    name: "Finance & Pricing Admin",
+    description: "Manage payouts, waste pricing, and financial reporting.",
     icon: Wallet,
     color: "text-gold",
     bg: "bg-gold/10",
-    permissions: [PERMISSIONS.FINANCE_VIEW, PERMISSIONS.FINANCE_PAYOUTS, PERMISSIONS.PRICING_MANAGE]
+    permissions: [
+      PERMISSIONS.FINANCE_VIEW, PERMISSIONS.FINANCE_PAYOUTS, PERMISSIONS.FINANCE_EXPORT,
+      PERMISSIONS.PRICING_MANAGE, PERMISSIONS.USERS_VIEW, PERMISSIONS.ANALYTICS_VIEW
+    ]
   },
   {
     id: "super",
@@ -71,26 +124,41 @@ const ADMIN_PRESETS = [
 
 export default function AdminManagement() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = searchParams.get("tab") || "collectors";
+  const moduleParam = searchParams.get("module") || "users";
+  const config = MODULE_CONFIG[moduleParam] || MODULE_CONFIG.users;
+  
+  const initialTab = searchParams.get("tab") || config.tabs[0];
   const [tab, setTab] = useState(initialTab);
-  const [permissionModal, setPermissionModal] = useState<{ open: boolean; user: any }>({ open: false, user: null });
+
+  useEffect(() => {
+    setTab(initialTab);
+  }, [initialTab, moduleParam]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedHubId, setSelectedHubId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [inviteModal, setInviteModal] = useState(false);
   const [newAdmin, setNewAdmin] = useState({ firstName: "", lastName: "", email: "", presetId: "" });
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [hubModal, setHubModal] = useState(false);
+  const [newHub, setNewHub] = useState({ name: "", location: "", state: "", lga: "", capacityKg: 5000, ownerAgentId: "" });
+  const [actionModal, setActionModal] = useState<{ 
+    open: boolean; 
+    type: "approve" | "delete" | "reject"; 
+    title: string; 
+    description: string; 
+    row?: any;
+    reason?: string;
+    selectedHubId?: string;
+  }>({ open: false, type: "approve", title: "", description: "" });
   
-  const handleTabChange = (newTab: string) => {
-    setTab(newTab);
-    setSearchParams({ tab: newTab });
-    setSelectedIds([]);
-    setSelectedUserId(null);
-    setSelectedHubId(null);
-  };
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role?.toLowerCase() === "super_admin";
+  const permissions = user?.permissions || [];
+  const has = (p: string) => isSuperAdmin || permissions.includes(p) || permissions.includes("ALL");
+
   const { data: stats } = useAdminDashboard();
   const { data: collectors, isLoading: collectorsLoading } = useAdminCollectors({ tab });
-  const { data: admins, isLoading: adminsLoading } = useAdmins();
+  const { data: admins, isLoading: adminsLoading } = useAdmins({ enabled: isSuperAdmin });
   const { data: hubs, isLoading: hubsLoading } = useHubs();
   const { data: agents, isLoading: agentsLoading } = useAgents();
   const { data: logistics, isLoading: logisticsLoading } = useLogistics();
@@ -103,6 +171,15 @@ export default function AdminManagement() {
   const { mutate: suspendUser } = useSuspendUser();
   const { mutate: unsuspendUser } = useUnsuspendUser();
   const { mutate: bulkAction, isPending: isBulkProcessing } = useBulkUserAction();
+  const { mutate: createHub, isPending: creatingHub } = useCreateHub();
+  const { data: pendingLocations, isLoading: locationsLoading } = usePendingLocations();
+  const { mutate: verifyLocation } = useVerifyLocation();
+  const { mutate: syncLocations, isPending: syncingLocations } = useSyncLocations();
+  const { data: pendingOfficial, isLoading: recruitmentLoading } = usePendingOfficialAgents();
+  const { mutate: approveOfficial } = useApproveOfficialAgent();
+  const { mutate: deleteOfficial } = useDeleteOfficialAgent();
+  const { data: factories, isLoading: factoriesLoading } = useFactories();
+  const { data: brands, isLoading: brandsLoading } = useBrands();
 
   const handleBulkAction = (action: string) => {
     bulkAction({ userIds: selectedIds, action }, {
@@ -124,21 +201,21 @@ export default function AdminManagement() {
     });
   };
 
-  const handleOpenPermissions = (u: any) => {
-    setPermissionModal({ open: true, user: u });
-    setSelectedPermissions(u.permissions || []);
-  };
-
-  const handleSavePermissions = () => {
-    if (permissionModal.user) {
-      updatePermissions({ id: permissionModal.user.id, permissions: selectedPermissions }, {
-        onSuccess: () => setPermissionModal({ open: false, user: null })
-      });
-    }
-  };
-
   const togglePermission = (p: string) => {
     setSelectedPermissions(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  };
+
+  const handleCreateHub = () => {
+    if (!newHub.name || !newHub.state || !newHub.lga) return;
+    createHub({
+      ...newHub,
+      address: newHub.location || `${newHub.lga}, ${newHub.state}`,
+    }, {
+      onSuccess: () => {
+        setHubModal(false);
+        setNewHub({ name: "", location: "", state: "", lga: "", capacityKg: 5000, ownerAgentId: "" });
+      }
+    });
   };
 
   let isLoading = false;
@@ -169,6 +246,27 @@ export default function AdminManagement() {
       users = inviteRequests;
       isLoading = requestsLoading;
       break;
+    case "recruitment":
+      users = pendingOfficial;
+      isLoading = recruitmentLoading;
+      break;
+    case "locations":
+      const { states = [], lgas = [], wards = [] } = pendingLocations || {};
+      users = [
+        ...states.map((s: any) => ({ ...s, type: "state", displayName: s.name.toUpperCase() })),
+        ...lgas.map((l: any) => ({ ...l, type: "lga", displayName: `${l.name.replace(/-/g, " ").toUpperCase()} (${l.state?.name.toUpperCase()})` })),
+        ...wards.map((w: any) => ({ ...w, type: "ward", displayName: `${w.name.replace(/-/g, " ").toUpperCase()} (${w.lga?.name.replace(/-/g, " ").toUpperCase()})` }))
+      ];
+      isLoading = locationsLoading;
+      break;
+    case "factories":
+      users = factories;
+      isLoading = factoriesLoading;
+      break;
+    case "brands":
+      users = brands;
+      isLoading = brandsLoading;
+      break;
   }
 
   const kpis = {
@@ -184,21 +282,34 @@ export default function AdminManagement() {
     requests: inviteRequests?.filter((r: any) => r.status === "PENDING").length ?? 0,
     hubs: hubs?.length ?? 0,
     logistics: logistics?.length ?? 0,
+    recruitment: pendingOfficial?.length ?? 0,
+    factories: factories?.length ?? 0,
+    brands: brands?.length ?? 0,
     staff: admins?.length ?? 0
+  };
+
+  const handleTabChange = (newTab: string) => {
+    setTab(newTab);
+    setSearchParams({ module: moduleParam, tab: newTab });
+    setSelectedIds([]);
+    setSelectedUserId(null);
+    setSelectedHubId(null);
   };
 
   const displayUsers = users || [];
 
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role?.toLowerCase() === "super_admin";
-  const permissions = user?.permissions || [];
-  const has = (p: string) => isSuperAdmin || permissions.includes(p) || permissions.includes("ALL");
-
   const tabsToDisplay = TABS.filter(t => {
+    const belongsToModule = config.tabs.includes(t.id);
+    if (!belongsToModule) return false;
+
     if (t.id === "staff") return isSuperAdmin;
+    if (t.id === "recruitment") return has(PERMISSIONS.FLEET_RECRUITMENT) || isSuperAdmin;
     if (t.id === "hubs") return has(PERMISSIONS.HUBS_VIEW) || has(PERMISSIONS.HUBS_MANAGE);
     if (t.id === "logistics") return has(PERMISSIONS.LOGISTICS_MANAGE) || has(PERMISSIONS.HUBS_MANAGE);
     if (t.id === "collectors" || t.id === "agents") return has(PERMISSIONS.USERS_VIEW) || has(PERMISSIONS.USERS_MANAGE);
+    if (t.id === "locations") return has(PERMISSIONS.LOCATIONS_MANAGE);
+    if (t.id === "factories") return has(PERMISSIONS.FACTORIES_VIEW) || has(PERMISSIONS.FACTORIES_MANAGE);
+    if (t.id === "brands") return has(PERMISSIONS.BRANDS_VIEW) || has(PERMISSIONS.BRANDS_MANAGE);
     return true;
   });
 
@@ -211,25 +322,29 @@ export default function AdminManagement() {
         return `${u.firstName || row.name} ${u.lastName || ""} ${row.id} ${u.email || ""}`;
       },
       render: (row) => {
-        if (tab === "requests") {
+        if (tab === "requests" || tab === "recruitment") {
+            const u = row.user || row;
+            const firstName = row.inviteeFirstName || u.firstName;
+            const lastName = row.inviteeLastName || u.lastName;
+            const email = row.inviteeEmail || u.email;
             return (
                 <div className="flex items-center gap-3">
-                  <Avatar name={`${row.inviteeFirstName} ${row.inviteeLastName}`} size={36} />
+                  <Avatar name={`${firstName} ${lastName}`} size={36} />
                   <div>
-                    <div className="font-extrabold">{row.inviteeFirstName} {row.inviteeLastName}</div>
+                    <div className="font-extrabold">{firstName} {lastName}</div>
                     <div className="flex items-center gap-2 text-[11px] text-textgray">
-                      <span>{row.inviteeEmail}</span>
+                      <span>{email}</span>
                     </div>
                   </div>
                 </div>
             );
         }
         const u = row.user || row; // Handle nested user or direct user object
-        const name = u.name || (u.firstName ? `${u.firstName} ${u.lastName}` : row.companyName || row.name || "N/A");
+        const name = row.displayName || u.name || (u.firstName ? `${u.firstName} ${u.lastName}` : row.companyName || row.name || "N/A");
         const sub = u.email || u.phoneNumber || row.id;
         return (
           <div className="flex items-center gap-3">
-            <Avatar name={name} size={36} />
+            <Avatar name={name} size={36} icon={tab === "locations" ? MapPin : undefined} />
             <div>
               <div className="font-extrabold">{name}</div>
               <div className="flex items-center gap-2 text-[11px] text-textgray">
@@ -251,6 +366,14 @@ export default function AdminManagement() {
                 <span className="text-[10px] text-textgray">Hub: {row.hub?.name}</span>
             </div>
         );
+        if (tab === "recruitment") return (
+          <div className="flex flex-col">
+              <span className="text-[11px] font-bold text-charcoal">{row.workMode === 'hub' ? 'Hub-Based' : 'Field Agent'}</span>
+              <span className="text-[10px] text-textgray">
+                {(typeof row.lga === 'object' ? row.lga?.name : row.lga) || "N/A"}, {(typeof row.state === 'object' ? row.state?.name : row.state) || "N/A"}
+              </span>
+          </div>
+        );
         const u = row.user || row;
         if (tab === "hubs") return <span className="text-textgray">{row.address || row.location} ({formatKg(row.capacityKg)})</span>;
         if (tab === "staff") return (
@@ -259,7 +382,10 @@ export default function AdminManagement() {
             <span className="text-[10px] text-textgray">{u.permissions?.join(", ") || "No extra permissions"}</span>
           </div>
         );
-        return <span className="text-textgray">{row.area || row.company || row.location || row.state || u.state || "N/A"}</span>;
+        const area = row.area || row.company || row.location || 
+                     (typeof row.state === 'object' ? row.state?.name : row.state) || 
+                     (typeof u.state === 'object' ? u.state?.name : u.state) || "N/A";
+        return <span className="text-textgray">{area}</span>;
       }
     },
     {
@@ -269,8 +395,14 @@ export default function AdminManagement() {
     },
     {
       key: "activity",
-      header: tab === "requests" ? "Invitee Type" : "Activity",
-      render: (row) => <span className="font-mono uppercase text-[10px] font-bold">{row.inviteeType || row.drops || row.trips || row.actions || row.verificationCount || 0}</span>
+      header: tab === "requests" ? "Invitee Type" : tab === "recruitment" ? "Phone" : tab === "locations" ? "Type" : "Activity",
+      render: (row) => {
+        const val = row.type || row.inviteeType || row.phoneNumber || 
+                   (typeof row.drops === 'number' ? row.drops : (Array.isArray(row.drops) ? row.drops.length : undefined)) || 
+                   (typeof row.trips === 'number' ? row.trips : (Array.isArray(row.trips) ? row.trips.length : undefined)) || 
+                   row.actions || row.verificationCount || 0;
+        return <span className="font-mono uppercase text-[10px] font-bold">{String(val)}</span>;
+      }
     },
     {
       key: "status",
@@ -290,6 +422,36 @@ export default function AdminManagement() {
       header: "",
       className: "text-right",
       render: (row) => {
+        if (tab === "recruitment") {
+          return (
+            <div className="flex items-center justify-end gap-2">
+                <button 
+                    className="btn-primary btn-sm px-4"
+                    onClick={() => setActionModal({
+                      open: true,
+                      type: "approve",
+                      title: "Approve Official Agent",
+                      description: `Are you sure you want to approve ${row.firstName} as an official agent? They will receive an email and gain access to the platform.`,
+                      row
+                    })}
+                >
+                    Approve
+                </button>
+                <button 
+                  className="btn-ghost btn-sm text-error"
+                  onClick={() => setActionModal({
+                    open: true,
+                    type: "delete",
+                    title: "Delete Application",
+                    description: `Are you sure you want to delete ${row.firstName}'s application? This action cannot be undone, but they will be able to re-apply later.`,
+                    row
+                  })}
+                >
+                  <Trash2 size={14} />
+                </button>
+            </div>
+          );
+        }
         if (tab === "requests") {
             if (row.status !== "PENDING") return <span className="text-[10px] text-textgray uppercase font-bold tracking-widest">{row.status}</span>;
             return (
@@ -303,13 +465,29 @@ export default function AdminManagement() {
                     </button>
                     <button 
                         className="btn-outline btn-sm text-error hover:bg-error/10"
-                        onClick={() => {
-                            const reason = window.prompt("Reason for rejection?");
-                            if (reason) manageInvite({ id: row.id, action: "reject", reason });
-                        }}
+                        onClick={() => setActionModal({
+                          open: true,
+                          type: "reject",
+                          title: "Reject Invite Request",
+                          description: `Please provide a reason for rejecting the invite request for ${row.inviteeFirstName || row.firstName}.`,
+                          row,
+                          reason: ""
+                        })}
                         disabled={managingInvite}
                     >
                         Reject
+                    </button>
+                </div>
+            );
+        }
+        if (tab === "locations") {
+            return (
+                <div className="flex items-center justify-end gap-2">
+                    <button 
+                        className="btn-primary btn-sm px-4"
+                        onClick={() => verifyLocation({ type: row.type, id: row.id })}
+                    >
+                        Verify Location
                     </button>
                 </div>
             );
@@ -320,7 +498,7 @@ export default function AdminManagement() {
             <div className="flex items-center gap-2">
               <button 
                 className="btn-outline btn-sm text-[10px]"
-                onClick={() => handleOpenPermissions(row)}
+                onClick={() => setSelectedUserId(row.id)}
               >
                 Manage Permissions
               </button>
@@ -374,9 +552,9 @@ export default function AdminManagement() {
   return (
     <>
       <PageHeader
-        eyebrow="User management"
-        title="People on the platform"
-        subtitle="Collectors, agents, logistics partners and Recovang staff — search, filter and manage them all from one place."
+        eyebrow={config.eyebrow}
+        title={config.label}
+        subtitle={`Manage ${config.label.toLowerCase()} settings, search, and filter records.`}
         actions={
           <>
             <PermissionGuard permission={PERMISSIONS.FINANCE_EXPORT}>
@@ -389,8 +567,17 @@ export default function AdminManagement() {
                 {exporting ? "Exporting..." : "Export to Excel"}
               </button>
             </PermissionGuard>
-            <button className="btn-primary" onClick={() => tab === "staff" ? setInviteModal(true) : null}>
-              <Plus size={14} /> {tab === "staff" ? "Invite Admin" : "Add user"}
+            <button 
+              className="btn-primary" 
+              onClick={() => {
+                if (tab === "staff") setInviteModal(true);
+                else if (tab === "hubs") setHubModal(true);
+                else if (tab === "locations") syncLocations();
+              }}
+              disabled={syncingLocations}
+            >
+              <Plus size={14} /> 
+              {tab === "staff" ? "Invite Admin" : tab === "hubs" ? "Add Hub" : tab === "locations" ? (syncingLocations ? "Syncing..." : "Sync Locations") : "Add user"}
             </button>
           </>
         }
@@ -495,63 +682,6 @@ export default function AdminManagement() {
       />
 
       <Modal
-        open={permissionModal.open}
-        onClose={() => setPermissionModal({ open: false, user: null })}
-        title="Staff Permissions"
-        description={`Assign specific access rights to ${permissionModal.user?.firstName || "this admin"}`}
-        footer={
-          <>
-            <button className="btn-outline" onClick={() => setPermissionModal({ open: false, user: null })}>Cancel</button>
-            <button 
-              className="btn-primary" 
-              onClick={handleSavePermissions}
-              disabled={updatingPermissions}
-            >
-              {updatingPermissions ? "Saving..." : "Save Changes"}
-            </button>
-          </>
-        }
-      >
-        <div className="grid gap-6">
-          <label className="flex cursor-pointer items-center justify-between rounded-2xl bg-primary/5 border border-primary/20 p-4">
-            <div>
-              <div className="text-xs font-black text-primary uppercase tracking-widest">Master Access (Super Admin)</div>
-              <div className="text-[10px] text-primary/70">Bypass all permission checks for this user.</div>
-            </div>
-            <input 
-              type="checkbox" 
-              className="checkbox border-primary/30 text-primary" 
-              checked={selectedPermissions.includes("ALL")}
-              onChange={() => togglePermission("ALL")}
-            />
-          </label>
-
-          {!selectedPermissions.includes("ALL") && (
-            <div className="grid gap-6 sm:grid-cols-2">
-              {PERMISSION_GROUPS.map((group) => (
-                <div key={group.name} className="space-y-3">
-                  <h4 className="text-[10px] font-bold uppercase tracking-widest text-textgray border-b border-bordergray pb-2">{group.name}</h4>
-                  <div className="grid gap-2">
-                    {group.permissions.map((p) => (
-                      <label key={p.key} className="flex cursor-pointer items-center gap-3 rounded-xl border border-bordergray/50 p-2.5 hover:bg-cream/20 transition-colors">
-                        <input 
-                          type="checkbox" 
-                          className="checkbox checkbox-sm" 
-                          checked={selectedPermissions.includes(p.key)}
-                          onChange={() => togglePermission(p.key)}
-                        />
-                        <span className="text-[11px] font-bold text-charcoal">{p.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Modal>
-
-      <Modal
         open={inviteModal}
         onClose={() => setInviteModal(false)}
         title="Invite New Admin"
@@ -627,6 +757,190 @@ export default function AdminManagement() {
           </div>
         </div>
       </Modal>
+
+      <Modal
+        open={hubModal}
+        onClose={() => setHubModal(false)}
+        title="Create New Hub"
+        description="Establish a new collection point in the Recovang ecosystem."
+        footer={
+          <>
+            <button className="btn-outline" onClick={() => setHubModal(false)}>Cancel</button>
+            <button 
+              className="btn-primary" 
+              onClick={handleCreateHub} 
+              disabled={creatingHub || !newHub.name || !newHub.state || !newHub.lga}
+            >
+              {creatingHub ? "Creating..." : "Create Hub"}
+            </button>
+          </>
+        }
+      >
+        <div className="grid gap-6">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-textgray">Hub Name</label>
+            <input 
+              className="input" 
+              placeholder="e.g. Lekki Central Hub" 
+              value={newHub.name}
+              onChange={e => setNewHub(prev => ({ ...prev, name: e.target.value }))}
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-textgray">State</label>
+              <select 
+                className="input" 
+                value={newHub.state}
+                onChange={e => setNewHub(prev => ({ ...prev, state: e.target.value, lga: "" }))}
+              >
+                <option value="">Select State</option>
+                {locationsData.map(s => <option key={s.state} value={s.state}>{s.state.toUpperCase()}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-textgray">LGA</label>
+              <select 
+                className="input" 
+                value={newHub.lga}
+                onChange={e => setNewHub(prev => ({ ...prev, lga: e.target.value }))}
+                disabled={!newHub.state}
+              >
+                <option value="">Select LGA</option>
+                {newHub.state && locationsData.find(s => s.state === newHub.state)?.lgas.map(l => (
+                  <option key={l.lga} value={l.lga}>{l.lga.replace(/-/g, " ").toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-textgray">Storage Capacity (Kg)</label>
+            <input 
+              className="input" 
+              type="number"
+              value={newHub.capacityKg}
+              onChange={e => setNewHub(prev => ({ ...prev, capacityKg: parseInt(e.target.value) }))}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-textgray">Hub Manager (Agent)</label>
+            <select 
+              className="input" 
+              value={newHub.ownerAgentId}
+              onChange={e => setNewHub(prev => ({ ...prev, ownerAgentId: e.target.value }))}
+            >
+              <option value="">Select Manager (Optional)</option>
+              {agents?.map((a: any) => (
+                <option key={a.id} value={a.id}>{a.user?.firstName} {a.user?.lastName} ({a.type})</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-textgray leading-relaxed">Assign an agent to manage this hub immediately upon creation.</p>
+          </div>
+        </div>
+      </Modal>
+      {/* Action Confirmation Modal */}
+      {actionModal.type === "reject" ? (
+        <Modal
+          open={actionModal.open}
+          onClose={() => setActionModal({ ...actionModal, open: false })}
+          title={actionModal.title}
+          description={actionModal.description}
+          footer={
+            <>
+              <button className="btn-outline" onClick={() => setActionModal({ ...actionModal, open: false })}>Cancel</button>
+              <button 
+                className="btn-primary !bg-error" 
+                disabled={!actionModal.reason}
+                onClick={() => {
+                  manageInvite({ id: actionModal.row.id, action: "reject", reason: actionModal.reason });
+                  setActionModal({ ...actionModal, open: false });
+                }}
+              >
+                Confirm Rejection
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <label className="text-xs font-bold uppercase tracking-wider text-textgray">Reason for rejection</label>
+            <textarea
+              className="w-full rounded-2xl border border-bordergray p-4 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none min-h-[120px]"
+              placeholder="Explain why this request is being rejected..."
+              value={actionModal.reason}
+              onChange={(e) => setActionModal({ ...actionModal, reason: e.target.value })}
+            />
+          </div>
+        </Modal>
+      ) : actionModal.type === "approve" ? (
+        <Modal
+          open={actionModal.open}
+          onClose={() => setActionModal({ ...actionModal, open: false })}
+          title={actionModal.title}
+          description={actionModal.description}
+          footer={
+            <>
+              <button className="btn-outline" onClick={() => setActionModal({ ...actionModal, open: false })}>Cancel</button>
+              <button 
+                className="btn-primary" 
+                onClick={() => {
+                  approveOfficial({ id: actionModal.row.id, hubId: actionModal.selectedHubId });
+                  setActionModal({ ...actionModal, open: false });
+                }}
+              >
+                Confirm Approval
+              </button>
+            </>
+          }
+        >
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 rounded-2xl bg-cream/50 p-4 border border-bordergray/50">
+              <Avatar name={`${actionModal.row?.firstName} ${actionModal.row?.lastName}`} size={48} />
+              <div>
+                <div className="font-extrabold text-charcoal">{actionModal.row?.firstName} {actionModal.row?.lastName}</div>
+                <div className="flex items-center gap-2 text-xs text-textgray">
+                  <span>Applying from: <span className="font-bold text-charcoal">{actionModal.row?.lga}, {actionModal.row?.state}</span></span>
+                  <span className="h-1 w-1 rounded-full bg-bordergray" />
+                  <span className="capitalize font-bold text-primary">{actionModal.row?.workMode || 'Hub'} Agent</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-textgray">Assign to Hub (Optional)</label>
+              <select 
+                className="input w-full"
+                value={actionModal.selectedHubId || ""}
+                onChange={(e) => setActionModal({ ...actionModal, selectedHubId: e.target.value })}
+              >
+                <option value="">No assignment for now</option>
+                {hubs?.map((h: any) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name} ({h.lga}, {h.state})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-textgray italic">
+                Assigning a hub now will automatically set up the agent's dashboard upon login.
+              </p>
+            </div>
+          </div>
+        </Modal>
+      ) : (
+        <ConfirmModal
+          open={actionModal.open}
+          onClose={() => setActionModal({ ...actionModal, open: false })}
+          title={actionModal.title}
+          description={actionModal.description}
+          tone={actionModal.type === "delete" ? "danger" : "primary"}
+          confirmLabel={actionModal.type === "delete" ? "Delete Forever" : "Confirm Approval"}
+          onConfirm={() => {
+            if (actionModal.type === "delete") deleteOfficial(actionModal.row.id);
+          }}
+        />
+      )}
     </>
   );
 }

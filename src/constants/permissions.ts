@@ -18,6 +18,7 @@ export const PERMISSIONS = {
   AGENTS_VIEW: "agents.view",
   AGENTS_MANAGE: "agents.manage",
   AGENTS_ASSIGN: "agents.assign",
+  FLEET_RECRUITMENT: "fleet.recruitment",
 
   // Financials
   FINANCE_VIEW: "finance.view",
@@ -27,11 +28,17 @@ export const PERMISSIONS = {
   // Operations
   PRICING_MANAGE: "pricing.manage",
   LOGISTICS_MANAGE: "logistics.manage",
+  FACTORIES_VIEW: "factories.view",
+  FACTORIES_MANAGE: "factories.manage",
+  BRANDS_VIEW: "brands.view",
+  BRANDS_MANAGE: "brands.manage",
+  LOCATIONS_MANAGE: "locations.manage",
   
   // Administration & Analytics
   ADMINS_MANAGE: "admins.manage",
   SYSTEM_SETTINGS: "system.settings",
   ANALYTICS_VIEW: "analytics.view",
+  AUDIT_VIEW: "audit.view",
 } as const;
 
 export const PERMISSION_GROUPS = [
@@ -45,6 +52,7 @@ export const PERMISSION_GROUPS = [
       { key: PERMISSIONS.USERS_MESSAGE, label: "Send Messages" },
       { key: PERMISSIONS.USERS_NOTES, label: "Manage Notes" },
       { key: PERMISSIONS.USERS_IMPERSONATE, label: "Impersonate (Login as)" },
+      { key: PERMISSIONS.USERS_DELETE, label: "Delete Users" },
     ]
   },
   {
@@ -56,6 +64,15 @@ export const PERMISSION_GROUPS = [
     ]
   },
   {
+    name: "Agent Management",
+    permissions: [
+      { key: PERMISSIONS.AGENTS_VIEW, label: "View Agents" },
+      { key: PERMISSIONS.AGENTS_MANAGE, label: "Manage Agents" },
+      { key: PERMISSIONS.AGENTS_ASSIGN, label: "Assign Agents" },
+      { key: PERMISSIONS.FLEET_RECRUITMENT, label: "Fleet Recruitment" },
+    ]
+  },
+  {
     name: "Financials",
     permissions: [
       { key: PERMISSIONS.FINANCE_VIEW, label: "View Financials" },
@@ -64,10 +81,22 @@ export const PERMISSION_GROUPS = [
     ]
   },
   {
-    name: "Operations",
+    name: "Operations & Partnerships",
     permissions: [
-      { key: PERMISSIONS.PRICING_MANAGE, label: "Manage Pricing" },
       { key: PERMISSIONS.LOGISTICS_MANAGE, label: "Manage Logistics" },
+      { key: PERMISSIONS.FACTORIES_MANAGE, label: "Manage Factories" },
+      { key: PERMISSIONS.BRANDS_MANAGE, label: "Manage Brands" },
+      { key: PERMISSIONS.PRICING_MANAGE, label: "Manage Pricing" },
+      { key: PERMISSIONS.LOCATIONS_MANAGE, label: "Manage Locations" },
+    ]
+  },
+  {
+    name: "Administration",
+    permissions: [
+      { key: PERMISSIONS.ADMINS_MANAGE, label: "Manage Staff" },
+      { key: PERMISSIONS.SYSTEM_SETTINGS, label: "System Settings" },
+      { key: PERMISSIONS.ANALYTICS_VIEW, label: "View Analytics" },
+      { key: PERMISSIONS.AUDIT_VIEW, label: "View Audit Logs" },
     ]
   }
 ];

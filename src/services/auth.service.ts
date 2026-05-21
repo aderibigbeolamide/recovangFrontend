@@ -40,7 +40,9 @@ export async function login(payload: LoginPayload): Promise<AuthResponse> {
     avatarLetters: (data.user.firstName?.[0] || "") + (data.user.lastName?.[0] || ""),
     role: (data.user.role || "").toLowerCase(),
     isApproved: data.user.isApproved || false,
-    kycStatus: data.user.kycStatus || "PENDING"
+    kycStatus: data.user.kycStatus || "PENDING",
+    agentSubType: data.user.agentSubType,
+    workMode: data.user.workMode
   };
 
   return { 
@@ -56,6 +58,11 @@ export interface RegisterPayload {
   phone: string;
   password: string;
   role: AuthUser["role"];
+  agentSubType?: string;
+  workMode?: string;
+  state?: string;
+  lga?: string;
+  ward?: string;
 }
 export async function register(payload: RegisterPayload): Promise<AuthResponse> {
   if (USE_MOCK) {
@@ -83,7 +90,12 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
     email: payload.email,
     phoneNumber: payload.phone,
     password: payload.password,
-    role: payload.role.toUpperCase()
+    role: payload.role.toUpperCase(),
+    agentSubType: payload.agentSubType,
+    workMode: payload.workMode,
+    state: payload.state,
+    lga: payload.lga,
+    ward: payload.ward
   };
 
   const { data: res } = await api.post("/auth/register", backendPayload);
@@ -95,7 +107,9 @@ export async function register(payload: RegisterPayload): Promise<AuthResponse> 
     avatarLetters: (data.user.firstName?.[0] || "") + (data.user.lastName?.[0] || ""),
     role: (data.user.role || "").toLowerCase(),
     isApproved: data.user.isApproved || false,
-    kycStatus: data.user.kycStatus || "PENDING"
+    kycStatus: data.user.kycStatus || "PENDING",
+    agentSubType: data.user.agentSubType,
+    workMode: data.user.workMode
   };
 
   return { 
@@ -111,8 +125,22 @@ export async function logout(): Promise<void> {
 
 export async function me(): Promise<AuthUser | null> {
   if (USE_MOCK) return null;
-  const { data } = await api.get("/auth/me");
-  return data.user ?? data;
+  const { data: res } = await api.get("/auth/me");
+  const data = res.data ?? res;
+  
+  // Normalize the data for the store
+  const user = {
+    ...data,
+    name: `${data.firstName || ""} ${data.lastName || ""}`.trim() || "User",
+    avatarLetters: (data.firstName?.[0] || "") + (data.lastName?.[0] || ""),
+    role: (data.role || "").toLowerCase(),
+    isApproved: data.isApproved || false,
+    kycStatus: data.kycStatus || "PENDING",
+    agentSubType: data.agentSubType,
+    workMode: data.workMode
+  };
+
+  return user;
 }
 
 export interface ForgotPayload {
@@ -146,12 +174,18 @@ export async function resetPassword(payload: ResetPayload): Promise<{ ok: true; 
   return { ok: true, message: "Password updated." };
 }
 
-export async function verifyEmail(payload: { email: string; code: string }): Promise<{ ok: true }> {
+export async function verifyEmail(payload: { email: string; otp: string }): Promise<{ ok: true }> {
   if (USE_MOCK) {
-    if (payload.code.length !== 6) throw new Error("Enter the 6-digit code.");
+    if (payload.otp.length !== 6) throw new Error("Enter the 6-digit code.");
     return delay({ ok: true as const });
   }
   await api.post("/auth/verify-email", payload);
+  return { ok: true };
+}
+
+export async function resendVerification(email: string): Promise<{ ok: true }> {
+  if (USE_MOCK) return delay({ ok: true as const });
+  await api.post("/auth/resend-verification", { email });
   return { ok: true };
 }
 
@@ -172,4 +206,20 @@ export async function googleLogin(idToken: string): Promise<AuthResponse> {
     user, 
     token: data.accessToken || data.token || data.access_token 
   };
+}
+
+export async function uploadKyc(payload: { file: File; type: string; name: string }): Promise<any> {
+  if (USE_MOCK) return delay({ status: "success" });
+  
+  const formData = new FormData();
+  formData.append("file", payload.file);
+  formData.append("type", payload.type);
+  formData.append("name", payload.name);
+
+  const { data } = await api.post("/auth/kyc/upload", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return data;
 }

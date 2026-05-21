@@ -1,31 +1,37 @@
 import { useAuth, type AuthUser } from "@/store/auth";
 
 export const PERMISSIONS = {
-  MANAGE_USERS: "MANAGE_USERS",
-  MANAGE_HUBS: "MANAGE_HUBS",
-  MANAGE_PRICING: "MANAGE_PRICING",
-  MANAGE_FINANCE: "MANAGE_FINANCE",
-  MANAGE_FRAUD: "MANAGE_FRAUD",
-  MANAGE_LOGISTICS: "MANAGE_LOGISTICS",
-  VIEW_AUDIT_LOGS: "VIEW_AUDIT_LOGS",
-  MANAGE_ADMINS: "MANAGE_ADMINS",
-  MANAGE_SYSTEM: "MANAGE_SYSTEM",
+  MANAGE_USERS: "users.manage",
+  MANAGE_HUBS: "hubs.manage",
+  MANAGE_PRICING: "pricing.manage",
+  MANAGE_FINANCE: "finance.payouts",
+  MANAGE_FRAUD: "fraud.manage",
+  MANAGE_LOGISTICS: "logistics.manage",
+  VIEW_AUDIT_LOGS: "audit.view",
+  MANAGE_ADMINS: "admins.manage",
+  MANAGE_SYSTEM: "system.settings",
+  MANAGE_FLEET: "fleet.recruitment",
   ALL: "ALL",
 } as const;
 
-export type Permission = keyof typeof PERMISSIONS;
+export type Permission = string;
 
-export const PERMISSION_LABELS: Record<Permission, { label: string; description: string }> = {
-  MANAGE_USERS: { label: "Manage users", description: "Suspend, unsuspend and view PII for collectors and agents." },
-  MANAGE_HUBS: { label: "Manage hubs", description: "Create new hubs, edit operating hours, transfer agents." },
-  MANAGE_PRICING: { label: "Set pricing", description: "Adjust naira-per-kg rates for materials." },
-  MANAGE_FINANCE: { label: "Approve payouts", description: "Bulk-approve withdrawals and view treasury." },
-  MANAGE_FRAUD: { label: "Resolve fraud", description: "Approve, reject or escalate flagged drops." },
-  MANAGE_LOGISTICS: { label: "Manage logistics", description: "Onboard fleet partners and manage routes." },
-  VIEW_AUDIT_LOGS: { label: "View audit logs", description: "Read-only access to platform audit trail." },
-  MANAGE_ADMINS: { label: "Manage admin team", description: "Add, remove and assign permissions to other admins." },
-  MANAGE_SYSTEM: { label: "System operations", description: "Maintenance windows, feature flags, integrations." },
-  ALL: { label: "Full access", description: "Super-admin override — every action permitted." },
+export const PERMISSION_LABELS: Record<string, { label: string; description: string }> = {
+  "users.view": { label: "View users", description: "Read-only access to collector and agent lists." },
+  "users.manage": { label: "Manage users", description: "Suspend, unsuspend and view PII for collectors and agents." },
+  "users.kyc": { label: "Approve KYC", description: "Review and verify identity documents." },
+  "hubs.view": { label: "View hubs", description: "Read-only access to hub locations and status." },
+  "hubs.manage": { label: "Manage hubs", description: "Create new hubs, edit operating hours, transfer agents." },
+  "pricing.manage": { label: "Set pricing", description: "Adjust naira-per-kg rates for materials." },
+  "finance.view": { label: "View financials", description: "Read-only access to payout history and treasury." },
+  "finance.payouts": { label: "Approve payouts", description: "Bulk-approve withdrawals and manage disbursements." },
+  "fraud.manage": { label: "Resolve fraud", description: "Approve, reject or escalate flagged drops." },
+  "logistics.manage": { label: "Manage logistics", description: "Onboard fleet partners and manage routes." },
+  "audit.view": { label: "View audit logs", description: "Read-only access to platform audit trail." },
+  "admins.manage": { label: "Manage admin team", description: "Add, remove and assign permissions to other admins." },
+  "system.settings": { label: "System operations", description: "Maintenance windows, feature flags, integrations." },
+  "fleet.recruitment": { label: "Fleet Recruitment", description: "Approve or reject official agent applications." },
+  "ALL": { label: "Full access", description: "Super-admin override — every action permitted." },
 };
 
 export function hasPermission(user: AuthUser | null, perm: Permission): boolean {

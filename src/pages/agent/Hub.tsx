@@ -24,7 +24,7 @@ export default function AgentHub() {
             It looks like you haven't set up your recycling hub yet. Let's get your business on the map!
         </p>
         <button onClick={() => setShowSetup(true)} className="btn-primary mt-8 px-10 py-4">Create My Hub Now</button>
-        {showSetup && <CreateHubModal onClose={() => { setShowSetup(false); refetch(); }} />}
+        {showSetup && <CreateHubModal isOpen={showSetup} onClose={() => { setShowSetup(false); refetch(); }} />}
     </div>
   );
 

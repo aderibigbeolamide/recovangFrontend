@@ -271,7 +271,7 @@ export async function getPost(slug: string): Promise<BlogPost | undefined> {
   if (USE_MOCK) return wait(MOCK_POSTS.find((p) => p.slug === slug || p.id === slug));
   try {
     const { data } = await api.get(`/blog/${slug}`);
-    return data.post ?? data;
+    return data.data ?? data.post ?? data;
   } catch {
     return MOCK_POSTS.find((p) => p.slug === slug || p.id === slug);
   }

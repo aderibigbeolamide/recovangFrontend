@@ -1,7 +1,9 @@
-import { useState } from "react";
-import { ArrowRight, Banknote, BookOpen, Check, GraduationCap, Lightbulb, Phone, Plus, Tv, Wifi, Zap } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowRight, Banknote, BookOpen, Check, GraduationCap, Lightbulb, Phone, Plus, Tv, Wifi, Zap, Loader2 } from "lucide-react";
 import { PageHeader } from "@/components/ui";
-import { formatNaira } from "@/lib/cn";
+import { Modal } from "@/components/Modal";
+import { formatNaira, cn } from "@/lib/cn";
+import { useDashboard, useWithdraw, useProfile, useAddBankAccount, useRemoveBankAccount, useBanks, useVerifyBankAccount } from "@/hooks/useCollector";
 
 const METHODS = [
   { id: "bank", icon: Banknote, label: "Bank transfer", sub: "Free · Instant" },
@@ -49,10 +51,101 @@ const BILLERS: Record<BillCategory, { n: string; icon: typeof Lightbulb; sub: st
 const PRESETS = [1000, 2500, 5000, 10000, 25000];
 
 export default function CollectorWithdraw() {
+  const { data } = useDashboard();
+  const { data: profile } = useProfile();
+  const { data: banksList } = useBanks();
+  const verifyBankMutation = useVerifyBankAccount();
+  const withdrawMutation = useWithdraw();
+  const addBankMutation = useAddBankAccount();
+  const removeBankMutation = useRemoveBankAccount();
+
   const [method, setMethod] = useState("bank");
   const [billCat, setBillCat] = useState<BillCategory>("electricity");
   const [amount, setAmount] = useState(10000);
-  const balance = 48750;
+
+  const [isAddingBank, setIsAddingBank] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
+  const [newBank, setNewBank] = useState({ bankCode: "", bankName: "", accountNumber: "", accountName: "" });
+  
+  const balance = (data?.balance || 0) / 100;
+
+  useEffect(() => {
+    // Automatically verify when exactly 10 digits and a bank is selected
+    if (newBank.accountNumber.length === 10 && newBank.bankCode) {
+      verifyBankMutation.mutate({ accountNumber: newBank.accountNumber, bankCode: newBank.bankCode }, {
+        onSuccess: (data) => {
+          setNewBank(prev => ({ ...prev, accountName: data.accountName }));
+          import("react-hot-toast").then(m => m.default.success("Account verified"));
+        },
+        onError: () => {
+          setNewBank(prev => ({ ...prev, accountName: "" }));
+          import("react-hot-toast").then(m => m.default.error("Could not verify account"));
+        }
+      });
+    }
+  }, [newBank.accountNumber, newBank.bankCode]);
+
+  const [network, setNetwork] = useState("MTN");
+  const [phone, setPhone] = useState("");
+  const [billId, setBillId] = useState("");
+
+  useEffect(() => {
+    if (profile?.phoneNumber && !phone) setPhone(profile.phoneNumber);
+  }, [profile?.phoneNumber]);
+
+  const handleWithdraw = async () => {
+    if (amount <= 0 || (balance !== undefined && amount > balance)) {
+      import("react-hot-toast").then(m => m.default.error("Invalid withdrawal amount"));
+      return;
+    }
+
+    try {
+      let payload = {};
+      if (method === "bank") {
+        if (!profile?.bankName || !profile?.accountNumber) {
+          import("react-hot-toast").then(m => m.default.error("Please add a bank account first"));
+          return;
+        }
+        payload = { amount, bankCode: profile.bankCode, accountNumber: profile.accountNumber };
+      } else if (method === "airtime") {
+        if (!phone) { import("react-hot-toast").then(m => m.default.error("Please enter a phone number")); return; }
+        payload = { amount, network, phone };
+      } else if (method === "data") {
+        if (!phone) { import("react-hot-toast").then(m => m.default.error("Please enter a phone number")); return; }
+        payload = { amount, network, phone, variation_code: "mtn-100mb" }; // Simplified for now
+      } else if (method === "bills") {
+        if (!billId) { import("react-hot-toast").then(m => m.default.error("Please enter your account/meter number")); return; }
+        payload = { amount, billType: billCat, serviceID: "dstv", billersCode: billId, phone: profile?.phoneNumber || "08000000000" };
+      }
+
+      await withdrawMutation.mutateAsync({ type: method, data: payload });
+      import("react-hot-toast").then(m => m.default.success("Withdrawal requested! You'll receive an alert shortly."));
+      setAmount(0);
+    } catch (err: any) {
+      import("react-hot-toast").then(m => m.default.error(err.response?.data?.message || "Failed to withdraw"));
+    }
+  };
+
+  const handleAddBank = async () => {
+    if (!newBank.bankName || !newBank.accountNumber) return;
+    try {
+      await addBankMutation.mutateAsync(newBank);
+      import("react-hot-toast").then(m => m.default.success("Bank account added!"));
+      setIsAddingBank(false);
+    } catch (err: any) {
+      import("react-hot-toast").then(m => m.default.error(err.response?.data?.message || "Failed to add bank account"));
+    }
+  };
+
+  const handleRemoveBank = async () => {
+    try {
+      await removeBankMutation.mutateAsync();
+      import("react-hot-toast").then(m => m.default.success("Bank account removed!"));
+      setShowRemoveConfirm(false);
+    } catch (err: any) {
+      import("react-hot-toast").then(m => m.default.error("Failed to remove bank account"));
+    }
+  };
 
   return (
     <>
@@ -88,23 +181,70 @@ export default function CollectorWithdraw() {
             <div className="card p-6">
               <h3 className="text-h4">Pick account</h3>
               <div className="mt-4 space-y-2">
-                {[
-                  { bank: "GTBank", acct: "0123 4567 8821", color: "bg-orange-500", default: true },
-                  { bank: "Opay", acct: "8160 4789 1129", color: "bg-emerald-500" },
-                ].map((a) => (
-                  <label key={a.acct} className="flex cursor-pointer items-center gap-4 rounded-2xl border border-bordergray bg-white p-4 has-[:checked]:border-primary has-[:checked]:bg-mint/40">
-                    <input type="radio" name="acct" defaultChecked={a.default} className="accent-primary" />
-                    <div className={`grid h-10 w-10 place-items-center rounded-xl ${a.color} text-white font-extrabold`}>{a.bank[0]}</div>
+                {profile?.bankName && profile?.accountNumber ? (
+                  <label className="flex items-center gap-4 rounded-2xl border border-primary bg-mint/40 p-4 relative group">
+                    <input type="radio" name="acct" defaultChecked className="accent-primary" />
+                    <div className="grid h-10 w-10 place-items-center rounded-xl bg-orange-500 text-white font-extrabold">{profile.bankName[0]}</div>
                     <div className="flex-1">
-                      <div className="font-extrabold">{a.bank}</div>
-                      <div className="font-mono text-xs text-textgray">{a.acct}</div>
+                      <div className="font-extrabold">{profile.bankName}</div>
+                      <div className="font-mono text-xs text-textgray">{profile.accountNumber}</div>
                     </div>
-                    {a.default && <span className="badge-mint">Default</span>}
+                    <span className="badge-mint">Default</span>
+                    <button onClick={(e) => { e.preventDefault(); setShowRemoveConfirm(true); }} className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-red-500 opacity-0 transition group-hover:opacity-100 bg-white px-3 py-1.5 rounded-lg border border-red-200">Remove</button>
                   </label>
-                ))}
-                <button className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-bordergray p-4 text-sm font-bold text-textgray hover:border-primary hover:text-primary">
-                  <Plus size={14} /> Add new bank account
-                </button>
+                ) : isAddingBank ? (
+                  <div className="rounded-2xl border border-bordergray bg-cream p-4 space-y-3">
+                    <select
+                      className="input text-sm bg-white"
+                      value={newBank.bankCode}
+                      onChange={(e) => {
+                        const bank = banksList?.find((b: any) => b.code === e.target.value);
+                        setNewBank({ ...newBank, bankCode: e.target.value, bankName: bank ? bank.name : "" });
+                      }}
+                    >
+                      <option value="">Select Bank</option>
+                      {banksList?.map((bank: any) => (
+                        <option key={bank.code} value={bank.code}>{bank.name}</option>
+                      ))}
+                    </select>
+
+                    <input 
+                      type="text" 
+                      placeholder="10-digit Account Number" 
+                      className="input text-sm" 
+                      value={newBank.accountNumber} 
+                      maxLength={10}
+                      onChange={(e) => setNewBank({ ...newBank, accountNumber: e.target.value.replace(/[^0-9]/g, "") })} 
+                    />
+
+                    <div className="relative">
+                      <input 
+                        type="text" 
+                        placeholder="Account Name (Auto-fetched)" 
+                        className="input text-sm bg-white/50" 
+                        value={newBank.accountName} 
+                        readOnly
+                        disabled
+                      />
+                      {verifyBankMutation.isPending && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-primary">
+                          <Loader2 size={16} className="animate-spin" />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 mt-2">
+                      <button onClick={() => setIsAddingBank(false)} className="btn-ghost btn-sm">Cancel</button>
+                      <button onClick={handleAddBank} disabled={addBankMutation.isPending || !newBank.accountName} className="btn-primary btn-sm">
+                        {addBankMutation.isPending ? "Saving..." : "Save Account"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setIsAddingBank(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-bordergray p-4 text-sm font-bold text-textgray hover:border-primary hover:text-primary">
+                    <Plus size={14} /> Add new bank account
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -118,16 +258,25 @@ export default function CollectorWithdraw() {
                   { n: "Airtel", c: "bg-red-500 text-white" },
                   { n: "Glo", c: "bg-green-500 text-white" },
                   { n: "9mobile", c: "bg-emerald-700 text-white" },
-                ].map((n, i) => (
-                  <button key={n.n} className={`rounded-2xl border-2 p-3 ${i === 0 ? "border-primary" : "border-transparent"}`}>
-                    <div className={`mx-auto grid h-12 w-12 place-items-center rounded-xl ${n.c} font-extrabold`}>{n.n[0]}</div>
+                ].map((n) => (
+                  <button 
+                    key={n.n} 
+                    onClick={() => setNetwork(n.n)}
+                    className={cn("rounded-2xl border-2 p-3 transition", network === n.n ? "border-primary bg-mint/30" : "border-transparent hover:border-bordergray")}
+                  >
+                    <div className={`mx-auto grid h-12 w-12 place-items-center rounded-xl ${n.c} font-extrabold shadow-sm`}>{n.n[0]}</div>
                     <div className="mt-2 text-xs font-bold">{n.n}</div>
                   </button>
                 ))}
               </div>
               <div className="mt-5">
                 <label className="label">Phone number</label>
-                <input className="input" defaultValue="+234 803 555 0182" />
+                <input 
+                  className="input" 
+                  placeholder="0803 000 0000" 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
               </div>
             </div>
           )}
@@ -172,11 +321,20 @@ export default function CollectorWithdraw() {
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className="label">{billCat === "electricity" ? "Meter number" : "Customer / Smartcard number"}</label>
-                    <input className="input" placeholder={billCat === "electricity" ? "01234567890" : "1234567890"} />
+                    <input 
+                      className="input" 
+                      placeholder={billCat === "electricity" ? "01234567890" : "1234567890"} 
+                      value={billId}
+                      onChange={(e) => setBillId(e.target.value)}
+                    />
                   </div>
                   <div>
                     <label className="label">Phone for receipt</label>
-                    <input className="input" defaultValue="+234 803 555 0182" />
+                    <input 
+                      className="input" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                    />
                   </div>
                 </div>
               )}
@@ -215,18 +373,44 @@ export default function CollectorWithdraw() {
               <Row k="Method" v={METHODS.find((m) => m.id === method)?.label ?? ""} />
               <Row k="Fee" v="₦0.00" />
               <Row k="Arrival" v="Within 30 seconds" />
-              <Row k="Reference" v="WD-2026-04-3219" mono />
+              <Row k="Reference" v={`WD-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`} mono />
               <div className="flex justify-between border-t border-white/10 pt-3">
                 <span className="font-extrabold text-white">Total debit</span>
                 <span className="font-mono text-lg font-extrabold text-accent">{formatNaira(amount)}</span>
               </div>
             </div>
-            <button className="btn-gold btn-lg mt-6 w-full">Confirm withdrawal <ArrowRight size={16} /></button>
+            <button onClick={handleWithdraw} disabled={withdrawMutation.isPending} className="btn-gold btn-lg mt-6 w-full">
+              {withdrawMutation.isPending ? "Processing..." : "Confirm withdrawal"} <ArrowRight size={16} />
+            </button>
             <p className="mt-3 text-center text-[11px] text-white/60">By continuing, you authorise Recovang to debit your wallet.</p>
           </div>
         </div>
       </div>
+      <Modal
+        open={showRemoveConfirm}
+        onClose={() => setShowRemoveConfirm(false)}
+        title="Remove Bank Account"
+        description="Are you sure you want to remove this bank account? You'll need to re-add it to withdraw funds."
+        size="sm"
+      >
+        <div className="flex gap-3 p-6 pt-0">
+          <button 
+            onClick={() => setShowRemoveConfirm(false)} 
+            className="flex-1 rounded-2xl border border-bordergray py-3 text-sm font-bold hover:bg-cream"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleRemoveBank} 
+            disabled={removeBankMutation.isPending}
+            className="flex-1 rounded-2xl bg-red-500 py-3 text-sm font-bold text-white shadow-lift transition hover:bg-red-600 disabled:opacity-50"
+          >
+            {removeBankMutation.isPending ? "Removing..." : "Yes, Remove"}
+          </button>
+        </div>
+      </Modal>
     </>
+
   );
 }
 

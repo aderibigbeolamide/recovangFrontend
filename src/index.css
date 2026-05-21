@@ -197,7 +197,7 @@
     @apply bg-gradient-to-r from-primary via-primary-400 to-accent-500 bg-clip-text text-transparent;
   }
   .text-gradient-gold {
-    @apply bg-gradient-to-r from-accent-300 via-accent to-accent-600 bg-clip-text text-transparent;
+    @apply text-accent-200;
   }
   .inset-shadow {
     box-shadow: inset 0 2px 8px rgba(28,28,46,0.08);

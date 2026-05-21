@@ -216,7 +216,7 @@ export function StatusPill({
     info: { cls: "bg-info-50 text-info", dot: "bg-info" },
     neutral: { cls: "bg-charcoal/8 text-charcoal", dot: "bg-charcoal" },
   };
-  const m = map[status];
+  const m = map[status as keyof typeof map] || map.default;
   return (
     <span className={cn("inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide", m.cls, className)}>
       <span className={cn("h-1.5 w-1.5 rounded-full", m.dot)} />

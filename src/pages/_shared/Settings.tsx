@@ -4,9 +4,10 @@ import { PageHeader } from "@/components/ui";
 import { useAuth } from "@/store/auth";
 import { Modal, ConfirmModal } from "@/components/Modal";
 import { cn } from "@/lib/cn";
+import { uploadKyc } from "@/services/auth.service";
+import { toast } from "react-hot-toast";
 
-function DocumentUpload({ label, description }: { label: string; description: string }) {
-  const [file, setFile] = useState<File | null>(null);
+function DocumentUpload({ label, description, file, onChange }: { label: string; description: string; file: File | null; onChange: (f: File | null) => void }) {
   return (
     <div>
       <label className="label">{label}</label>
@@ -14,7 +15,7 @@ function DocumentUpload({ label, description }: { label: string; description: st
         <input 
           type="file" 
           className="absolute inset-0 z-10 h-full w-full opacity-0 cursor-pointer" 
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          onChange={(e) => onChange(e.target.files?.[0] || null)}
         />
         <div className="flex h-32 w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-bordergray bg-cream/30 transition hover:border-primary/50 hover:bg-cream/50">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-textgray shadow-soft">
@@ -43,10 +44,26 @@ type TabId = typeof TABS[number]["id"];
 
 export default function SettingsPage() {
   const { user, updateUser, signOut } = useAuth();
-  const [tab, setTab] = useState<TabId>("profile");
+  
+  const filteredTabs = TABS.filter(t => {
+    if (t.id === "verification") {
+      // Official agents don't need hub verification
+      if (user?.role === "agent" && user?.agentSubType === "official") return false;
+      // Admins don't need verification
+      if (user?.role === "admin" || user?.role === "super_admin") return false;
+    }
+    return true;
+  });
+
+  const [tab, setTab] = useState<TabId>(filteredTabs[0].id);
   const [saved, setSaved] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState(false);
   const [pwModal, setPwModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Document states
+  const [doc1, setDoc1] = useState<File | null>(null);
+  const [doc2, setDoc2] = useState<File | null>(null);
 
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
@@ -62,6 +79,35 @@ export default function SettingsPage() {
   function saveProfile() {
     updateUser({ name, email, phone, city, company });
     flash("Profile updated");
+  }
+
+  async function handleKycSubmit() {
+    if (!doc1 && !doc2) {
+      toast.error("Please select at least one document to upload");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (doc1) {
+        const type = user?.role === "collector" ? "ID_CARD" : 
+                     user?.role === "agent" ? "GOVT_ID" : "CAC_CERT";
+        await uploadKyc({ file: doc1, type, name: doc1.name });
+      }
+
+      if (doc2) {
+        const type = user?.role === "agent" ? "HUB_PHOTO" : "LICENSE";
+        await uploadKyc({ file: doc2, type, name: doc2.name });
+      }
+
+      updateUser({ kycStatus: "IN_REVIEW" });
+      toast.success("Documents uploaded successfully!");
+      setTab("profile");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to upload documents");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -82,7 +128,7 @@ export default function SettingsPage() {
         {/* Side tabs */}
         <aside className="lg:col-span-3">
           <div className="card overflow-hidden p-2">
-            {TABS.map((t) => (
+            {filteredTabs.map((t) => (
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
@@ -193,6 +239,8 @@ export default function SettingsPage() {
                       <DocumentUpload 
                         label="Upload NIN Slip / ID Card" 
                         description="JPEG, PNG or PDF (Max 5MB)"
+                        file={doc1}
+                        onChange={setDoc1}
                       />
                     </div>
                   )}
@@ -210,11 +258,15 @@ export default function SettingsPage() {
                       <DocumentUpload 
                         label="Certificate of Incorporation" 
                         description="CAC document clearly showing company name and RC number"
+                        file={doc1}
+                        onChange={setDoc1}
                       />
                       {user?.role === "factory" && (
                         <DocumentUpload 
                           label="Environmental / Recycling License" 
                           description="Valid permit from NESREA or State agency"
+                          file={doc2}
+                          onChange={setDoc2}
                         />
                       )}
                     </div>
@@ -222,16 +274,30 @@ export default function SettingsPage() {
 
                   {user?.role === "agent" && (
                     <div className="grid gap-6">
-                      <Field label="Business/Hub Name" icon={Building2}>
-                        <input className="input" placeholder="Official hub name" />
-                      </Field>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field label="Business/Hub Name" icon={Building2}>
+                          <input className="input" placeholder="Official hub name" />
+                        </Field>
+                        <Field label="National ID Number (NIN)" icon={Shield}>
+                          <input 
+                            className="input font-mono" 
+                            placeholder="11-digit NIN" 
+                            maxLength={11}
+                            defaultValue={(user as any)?.nin || ""}
+                          />
+                        </Field>
+                      </div>
                       <DocumentUpload 
                         label="Government Issued ID" 
                         description="Voter's card, Driver's license or International Passport"
+                        file={doc1}
+                        onChange={setDoc1}
                       />
                       <DocumentUpload 
                         label="Hub Location Photo" 
                         description="Photo clearly showing the front of your hub facility"
+                        file={doc2}
+                        onChange={setDoc2}
                       />
                     </div>
                   )}
@@ -242,14 +308,11 @@ export default function SettingsPage() {
 
                   <div className="flex justify-end">
                     <button 
-                      onClick={() => {
-                        updateUser({ kycStatus: "IN_REVIEW" });
-                        flash("Documents submitted for review");
-                        setTab("profile");
-                      }} 
+                      onClick={handleKycSubmit}
+                      disabled={loading}
                       className="btn-primary"
                     >
-                      Submit for review
+                      {loading ? <Loader2 size={16} className="animate-spin" /> : "Submit for review"}
                     </button>
                   </div>
                 </div>

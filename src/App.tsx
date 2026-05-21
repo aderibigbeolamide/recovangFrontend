@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "react-hot-toast";
 import {
   Activity, Award, BadgeCheck, Bell, Boxes, Building2, ClipboardList, Coins, FileText, FileWarning,
   Flag, Gauge, Gift, Globe, History, LayoutGrid, Leaf, MapPin, Package, PackageCheck, QrCode, Recycle, Receipt,
@@ -128,12 +129,28 @@ const getAdminNav = (user: any, portalBase: string): NavItem[] => {
     nav.push({ to: `${portalBase}/treasury`, label: "Treasury", icon: <Wallet size={15} /> });
   }
 
-  if (has(PERMISSIONS.USERS_VIEW) || has(PERMISSIONS.USERS_MANAGE) || has(PERMISSIONS.HUBS_VIEW) || has(PERMISSIONS.HUBS_MANAGE) || has("MANAGE_USERS") || has("MANAGE_HUBS")) {
-    nav.push({ to: `${portalBase}/management`, label: "Management", icon: <Users size={15} /> });
+  if (has(PERMISSIONS.USERS_VIEW) || has(PERMISSIONS.USERS_MANAGE) || has(PERMISSIONS.FLEET_RECRUITMENT)) {
+    nav.push({ to: `${portalBase}/management?module=users`, label: "User Management", icon: <Users size={15} /> });
   }
 
-  if (has(PERMISSIONS.LOGISTICS_MANAGE) || has(PERMISSIONS.HUBS_MANAGE) || has("MANAGE_LOGISTICS") || has("MANAGE_HUBS")) {
-    nav.push({ to: `${portalBase}/logistics`, label: "Logistics", icon: <Truck size={15} /> });
+  if (has(PERMISSIONS.HUBS_VIEW) || has(PERMISSIONS.HUBS_MANAGE)) {
+    nav.push({ to: `${portalBase}/management?module=hubs`, label: "Hub Management", icon: <Building2 size={15} /> });
+  }
+
+  if (has(PERMISSIONS.LOGISTICS_MANAGE)) {
+    nav.push({ to: `${portalBase}/management?module=logistics`, label: "Logistics Management", icon: <Truck size={15} /> });
+  }
+
+  if (has(PERMISSIONS.FACTORIES_VIEW) || has(PERMISSIONS.FACTORIES_MANAGE)) {
+    nav.push({ to: `${portalBase}/management?module=factories`, label: "Factory Management", icon: <Boxes size={15} /> });
+  }
+
+  if (has(PERMISSIONS.BRANDS_VIEW) || has(PERMISSIONS.BRANDS_MANAGE)) {
+    nav.push({ to: `${portalBase}/management?module=brands`, label: "Brand Management", icon: <Award size={15} /> });
+  }
+
+  if (has(PERMISSIONS.LOCATIONS_MANAGE)) {
+    nav.push({ to: `${portalBase}/management?module=locations`, label: "Location Management", icon: <MapPin size={15} /> });
   }
 
   if (has(PERMISSIONS.FINANCE_VIEW) || has(PERMISSIONS.FINANCE_PAYOUTS) || has("MANAGE_FINANCE")) {
@@ -309,6 +326,10 @@ export default function App() {
             >
               <Route index element={<Navigate to="/super_admin/dashboard" replace />} />
               <Route path="dashboard" element={<SuperAdminDashboard />} />
+              <Route path="management" element={<AdminManagement />} />
+              <Route path="logistics" element={<AdminLogistics />} />
+              <Route path="payouts" element={<AdminPayouts />} />
+              <Route path="fraud" element={<AdminFraud />} />
               <Route path="staff" element={<SuperAdminStaff />} />
               <Route path="treasury" element={<SuperAdminTreasury />} />
               <Route path="pricing" element={<SuperAdminRegionalPricing />} />
@@ -353,10 +374,10 @@ export default function App() {
               <Route path="profile-settings" element={<SettingsPage />} />
             </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </BrowserRouter>
+      <Toaster position="top-right" />
     </QueryClientProvider>
   );
 }

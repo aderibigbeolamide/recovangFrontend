@@ -182,7 +182,7 @@ export default function AgentDashboard() {
         </motion.div>
       </div>
 
-      {showSetup && <CreateHubModal onClose={() => setShowSetup(false)} />}
+      {showSetup && <CreateHubModal isOpen={showSetup} onClose={() => setShowSetup(false)} />}
     </>
   );
 }

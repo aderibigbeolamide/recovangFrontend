@@ -9,7 +9,7 @@ import { AreaChart, BarChart, Donut, ProgressRing } from "@/components/charts";
 import { formatNaira, formatKg, formatNumber } from "@/lib/cn";
 import { useAdminDashboard, useAdminAnalytics, useSystemHealth } from "@/hooks/useAdmin";
 import { useAuth } from "@/store/auth";
-import { hasPermission, PERMISSION_LABELS, type Permission } from "@/lib/permissions";
+import { hasPermission, PERMISSION_LABELS, PERMISSIONS, type Permission } from "@/lib/permissions";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
@@ -19,10 +19,10 @@ const fadeUp = (delay = 0) => ({
 });
 
 const ALERTS = [
-  { type: "fraud", text: "9 flagged drops awaiting review at Lekki Hub", priority: "high", action: "/admin/fraud", perm: "MANAGE_FRAUD" as Permission },
-  { type: "logistics", text: "Hub LG-IK402 truck service overdue", priority: "high", action: "/admin/logistics", perm: "MANAGE_HUBS" as Permission },
-  { type: "capacity", text: "Surulere Flagship Hub at 78% capacity", priority: "med", action: "/admin/management?tab=hubs", perm: "MANAGE_HUBS" as Permission },
-  { type: "ops", text: "Pricing engine refresh scheduled for Monday 6am", priority: "low", action: "/admin/pricing", perm: "MANAGE_PRICING" as Permission },
+  { type: "fraud", text: "9 flagged drops awaiting review at Lekki Hub", priority: "high", action: "/admin/fraud", perm: PERMISSIONS.MANAGE_FRAUD },
+  { type: "logistics", text: "Hub LG-IK402 truck service overdue", priority: "high", action: "/admin/logistics", perm: PERMISSIONS.MANAGE_HUBS },
+  { type: "capacity", text: "Surulere Flagship Hub at 78% capacity", priority: "med", action: "/admin/management?tab=hubs", perm: PERMISSIONS.MANAGE_HUBS },
+  { type: "ops", text: "Pricing engine refresh scheduled for Monday 6am", priority: "low", action: "/admin/pricing", perm: PERMISSIONS.MANAGE_PRICING },
 ];
 
 export default function AdminDashboard() {
@@ -58,9 +58,17 @@ export default function AdminDashboard() {
     { label: "E-Waste", value: 30, color: "#E74C3C" },
   ];
 
-  const ALL_PERMS: Permission[] = ["MANAGE_USERS", "MANAGE_HUBS", "MANAGE_FRAUD", "MANAGE_LOGISTICS", "MANAGE_FINANCE", "MANAGE_PRICING", "VIEW_AUDIT_LOGS"];
-  const granted = ALL_PERMS.filter((p) => hasPermission(user, p));
-  const denied = ALL_PERMS.filter((p) => !hasPermission(user, p));
+  const ALL_PERMS = [
+    PERMISSIONS.MANAGE_USERS, 
+    PERMISSIONS.MANAGE_HUBS, 
+    PERMISSIONS.MANAGE_FRAUD, 
+    PERMISSIONS.MANAGE_LOGISTICS, 
+    PERMISSIONS.MANAGE_FINANCE, 
+    PERMISSIONS.MANAGE_PRICING, 
+    PERMISSIONS.VIEW_AUDIT_LOGS
+  ];
+  const granted = ALL_PERMS.filter((p) => hasPermission(user, p as any));
+  const denied = ALL_PERMS.filter((p) => !hasPermission(user, p as any));
 
   return (
     <>
@@ -90,12 +98,12 @@ export default function AdminDashboard() {
               </div>
               <p className="mt-1 text-sm text-textgray">Granted by Super Admin · {user?.region ?? "Regional scope"}</p>
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {granted.map((p) => (
+                {granted.map((p) => PERMISSION_LABELS[p] && (
                   <span key={p} className="inline-flex items-center gap-1 rounded-full bg-mint/70 px-2.5 py-1 text-[11px] font-bold text-primary">
                     <CheckCircle2 size={11} /> {PERMISSION_LABELS[p].label}
                   </span>
                 ))}
-                {denied.map((p) => (
+                {denied.map((p) => PERMISSION_LABELS[p] && (
                   <span key={p} className="inline-flex items-center gap-1 rounded-full bg-cream px-2.5 py-1 text-[11px] font-bold text-textgray/70">
                     <Lock size={11} /> {PERMISSION_LABELS[p].label}
                   </span>

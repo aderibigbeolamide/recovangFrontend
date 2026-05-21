@@ -17,7 +17,7 @@ export default function AgentVerify() {
   const rejectMutation = useRejectSubmission();
 
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [actualKg, setActualKg] = useState<number>(0);
+  const [actualKg, setActualKg] = useState<Record<string, number>>({});
   const [showRejectPanel, setShowRejectPanel] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showScanner, setShowScanner] = useState(false);
@@ -33,14 +33,17 @@ export default function AgentVerify() {
 
   useEffect(() => {
     if (selected) {
-        setActualKg(Number(selected.totalWeightKg));
+        const kgMap: Record<string, number> = {};
+        selected.items.forEach((i: any) => {
+           kgMap[i.id] = Number(i.quantity) || 0;
+        });
+        setActualKg(kgMap);
     }
   }, [selected]);
 
   if (isLoading) return <div className="p-20 text-center font-bold">Loading verifier...</div>;
 
   const handleScan = (id: string) => {
-    // Check if ID exists in queue
     const match = QUEUE.find((q: any) => q.id === id || q.id.slice(0, 8) === id);
     if (match) {
         setActiveId(match.id);
@@ -57,7 +60,7 @@ export default function AgentVerify() {
             id: selected.id,
             items: selected.items.map((i: any) => ({
                 itemId: i.id,
-                actualWeightKg: actualKg
+                actualWeightKg: actualKg[i.id] || 0
             }))
         });
         toast.success("Verification successful! Payout sent.");
@@ -78,9 +81,13 @@ export default function AgentVerify() {
     }
   };
 
-  // Mock rate for display
-  const rate = 200; 
-  const payout = Math.round(actualKg * rate);
+  // Calculate total actual Kg and total payout
+  const totalActualKg = Object.values(actualKg).reduce((sum, val) => sum + val, 0);
+  const payout = selected?.items?.reduce((sum: number, item: any) => {
+      const kg = actualKg[item.id] || 0;
+      const rate = item.pricePerUnit ? item.pricePerUnit / 100 : 200;
+      return sum + (kg * rate);
+  }, 0) || 0;
 
   return (
     <>
@@ -146,49 +153,64 @@ export default function AgentVerify() {
               <span className="badge-mint inline-flex items-center gap-1"><ShieldCheck size={12} /> Verified collector</span>
             </div>
 
-            <div className="p-6">
-              <div className="grid items-stretch gap-5 sm:grid-cols-2">
-                <div className="rounded-2xl border border-bordergray bg-cream p-5">
-                  <div className="flex items-center gap-3">
-                    <CategoryIcon category={selected.items?.[0]?.wasteCategory?.name} size={48} />
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Material</div>
-                      <div className="text-base font-extrabold">{selected.items?.[0]?.wasteCategory?.name || "Mixed Material"}</div>
-                      <div className="font-mono text-xs text-primary">₦200/kg (standard)</div>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-baseline justify-between border-t border-bordergray pt-3">
-                    <span className="text-xs text-textgray">Collector estimated</span>
-                    <span className="font-mono font-extrabold">{selected.totalWeightKg} kg</span>
-                  </div>
-                </div>
+              <div className="p-6">
+                <div className="space-y-6">
+                  {selected.items?.map((item: any) => (
+                    <div key={item.id} className="grid items-stretch gap-5 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-bordergray bg-cream p-5">
+                        <div className="flex items-center gap-3">
+                          <CategoryIcon category={item.wasteCategory?.name} size={48} />
+                          <div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Material</div>
+                            <div className="text-base font-extrabold">{item.wasteCategory?.name || "Mixed Material"}</div>
+                            <div className="font-mono text-xs text-primary">₦{item.pricePerUnit ? item.pricePerUnit / 100 : 200}/kg (standard)</div>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-baseline justify-between border-t border-bordergray pt-3">
+                          <span className="text-xs text-textgray">Collector estimated</span>
+                          <span className="font-mono font-extrabold">{item.quantity} kg</span>
+                        </div>
+                      </div>
 
-                <div className="rounded-2xl border-2 border-primary bg-mint/40 p-5">
-                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
-                    <Scale size={12} /> Hub-scale weight
-                  </div>
-                  <div className="mt-3 flex items-center gap-2">
-                    <button onClick={() => setActualKg((k) => Math.max(0, k - 0.1))} className="grid h-10 w-10 place-items-center rounded-xl border border-bordergray bg-white">−</button>
-                    <input
-                      value={actualKg.toFixed(1)}
-                      onChange={(e) => setActualKg(parseFloat(e.target.value) || 0)}
-                      step="0.1"
-                      type="number"
-                      className="input h-10 flex-1 text-center font-mono text-2xl font-extrabold"
-                    />
-                    <button onClick={() => setActualKg((k) => k + 0.1)} className="grid h-10 w-10 place-items-center rounded-xl border border-bordergray bg-white">+</button>
-                  </div>
-                  <div className="mt-2 text-center text-xs text-textgray">Confirm weight from physical scale</div>
+                      <div className="rounded-2xl border-2 border-primary bg-mint/40 p-5">
+                        <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary">
+                          <Scale size={12} /> Hub-scale weight
+                        </div>
+                        <div className="mt-3 flex items-center gap-2">
+                          <button onClick={() => setActualKg((prev) => ({ ...prev, [item.id]: Math.max(0, (prev[item.id] || 0) - 0.1) }))} className="grid h-10 w-10 place-items-center rounded-xl border border-bordergray bg-white">−</button>
+                          <input
+                            value={(actualKg[item.id] || 0).toFixed(1)}
+                            onChange={(e) => setActualKg((prev) => ({ ...prev, [item.id]: parseFloat(e.target.value) || 0 }))}
+                            step="0.1"
+                            type="number"
+                            className="input h-10 flex-1 text-center font-mono text-2xl font-extrabold"
+                          />
+                          <button onClick={() => setActualKg((prev) => ({ ...prev, [item.id]: (prev[item.id] || 0) + 0.1 }))} className="grid h-10 w-10 place-items-center rounded-xl border border-bordergray bg-white">+</button>
+                        </div>
+                        <div className="mt-2 text-center text-xs text-textgray">Confirm weight from physical scale</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
 
               {/* Photos */}
               <div className="mt-5">
                 <div className="mb-3 flex items-center justify-between">
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Collector's Proof</div>
                   <div className="text-[10px] font-bold uppercase tracking-widest text-textgray">Scale Proof · Required</div>
-                  <button className="btn-outline btn-sm"><Camera size={12} /> Snap scale</button>
                 </div>
                 <div className="grid grid-cols-4 gap-2">
+                  {selected.photos && selected.photos.length > 0 ? (
+                    selected.photos.map((url: string, i: number) => (
+                      <div key={i} className="aspect-square rounded-xl border border-bordergray bg-cream overflow-hidden">
+                        <img src={url} alt="Proof" className="w-full h-full object-cover" />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="aspect-square rounded-xl border border-dashed border-bordergray bg-cream/50 grid place-items-center">
+                      <span className="text-[10px] text-textgray">No photo</span>
+                    </div>
+                  )}
                   <div className="aspect-square rounded-xl border-2 border-dashed border-bordergray bg-cream grid place-items-center cursor-pointer hover:border-primary transition">
                     <Camera size={18} className="text-textgray" />
                   </div>
@@ -242,7 +264,7 @@ export default function AgentVerify() {
                       <div className="mt-1 font-mono text-3xl font-extrabold text-white">
                         <span className="text-accent">₦</span>{payout.toLocaleString("en-NG")}
                       </div>
-                      <div className="mt-1 text-[11px] text-white/60">{actualKg.toFixed(1)} kg × ₦200/kg · Verified by {dashboardData?.agent?.name}</div>
+                      <div className="mt-1 text-[11px] text-white/60">{totalActualKg.toFixed(1)} kg total · Verified by {dashboardData?.agent?.name}</div>
                     </div>
                     <button 
                         disabled={verifyMutation.isPending}

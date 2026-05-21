@@ -127,13 +127,14 @@ export function useFlaggedSubmissions() {
   });
 }
 
-export function useAdmins() {
+export function useAdmins(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["super_admin", "admins"],
     queryFn: async () => {
       const { data } = await adminService.getAdmins();
       return data.data ?? data;
     },
+    ...options
   });
 }
 
@@ -143,6 +144,20 @@ export function useHubs() {
     queryFn: async () => {
       const { data } = await adminService.getHubs();
       return data.data ?? data;
+    },
+  });
+}
+
+export function useCreateHub() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: any) => adminService.createHub(data),
+    onSuccess: () => {
+      toast.success("Hub created successfully!");
+      qc.invalidateQueries({ queryKey: ["admin", "hubs"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to create hub");
     },
   });
 }
@@ -423,7 +438,7 @@ export function useRejectKYC() {
   });
 }
 
-export function useUserNotes(userId: string | null) {
+export function useUserNotes(userId: string | null, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["admin", "users", userId, "notes"],
     queryFn: async () => {
@@ -431,7 +446,8 @@ export function useUserNotes(userId: string | null) {
       const { data } = await adminService.getUserNotes(userId);
       return data.data;
     },
-    enabled: !!userId,
+    ...options,
+    enabled: (options.enabled !== false) && !!userId,
   });
 }
 
@@ -460,7 +476,7 @@ export function useSendMessage() {
   });
 }
 
-export function useUserMessages(userId: string | null) {
+export function useUserMessages(userId: string | null, options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: ["admin", "users", userId, "messages"],
     queryFn: async () => {
@@ -468,7 +484,8 @@ export function useUserMessages(userId: string | null) {
       const { data } = await adminService.getUserMessages(userId);
       return data.data;
     },
-    enabled: !!userId,
+    ...options,
+    enabled: (options.enabled !== false) && !!userId,
   });
 }
 
@@ -607,6 +624,119 @@ export function useManageAgentInvite() {
     },
     onError: (err: any) => {
       toast.error(err.response?.data?.message || "Action failed");
+    },
+  });
+}
+
+export function usePendingLocations() {
+  return useQuery({
+    queryKey: ["admin", "locations", "pending"],
+    queryFn: async () => {
+      const { data } = await adminService.getPendingLocations();
+      return data.data;
+    },
+  });
+}
+
+export function useVerifyLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ type, id }: { type: "state" | "lga" | "ward"; id: string }) => 
+      adminService.verifyLocation(type, id),
+    onSuccess: () => {
+      toast.success("Location verified successfully");
+      qc.invalidateQueries({ queryKey: ["admin", "locations", "pending"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Verification failed");
+    }
+  });
+}
+
+export function useSyncLocations() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => adminService.syncLocations(),
+    onSuccess: () => {
+      toast.success("Locations synced successfully!");
+      qc.invalidateQueries({ queryKey: ["admin", "locations", "pending"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Sync failed");
+    },
+  });
+}
+
+export function usePendingOfficialAgents() {
+  return useQuery({
+    queryKey: ["admin", "agents", "pending-official"],
+    queryFn: async () => {
+      const { data } = await adminService.getPendingOfficialAgents();
+      return data.data;
+    },
+  });
+}
+
+export function useApproveOfficialAgent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, hubId }: { id: string; hubId?: string }) => adminService.approveOfficialAgent(id, { hubId }),
+    onSuccess: (res: any) => {
+      toast.success(res.data?.message || "Agent approved successfully");
+      qc.invalidateQueries({ queryKey: ["admin", "agents"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to approve agent");
+    },
+  });
+}
+
+export function useDeleteOfficialAgent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => adminService.deleteOfficialAgent(id),
+    onSuccess: (res: any) => {
+      toast.success(res.data?.message || "Application deleted successfully");
+      qc.invalidateQueries({ queryKey: ["admin", "agents"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to delete application");
+    },
+  });
+}
+
+export function useAssignAgentToHub() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ agentId, hubId }: { agentId: string; hubId: string | null }) => adminService.assignAgentToHub(agentId, hubId),
+    onSuccess: (res: any) => {
+      toast.success(res.data?.message || "Agent assignment updated");
+      qc.invalidateQueries({ queryKey: ["admin", "hubs"] });
+      qc.invalidateQueries({ queryKey: ["admin", "agents"] });
+      qc.invalidateQueries({ queryKey: ["admin", "hub-details"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Failed to update assignment");
+    }
+  });
+}
+
+export function useFactories() {
+  return useQuery({
+    queryKey: ["admin", "factories"],
+    queryFn: async () => {
+      const { data } = await adminService.getFactories();
+      return data.data ?? data;
+    },
+  });
+}
+
+export function useBrands() {
+  return useQuery({
+    queryKey: ["admin", "brands"],
+    queryFn: async () => {
+      const { data } = await adminService.getBrands();
+      return data.data ?? data;
     },
   });
 }

@@ -97,4 +97,14 @@ export const adminService = {
   getAgentInviteRequests: () => api.get("/admin/agents/invite-requests"),
   approveAgentInvite: (id: string) => api.post(`/admin/agents/invite-requests/${id}/approve`),
   rejectAgentInvite: (id: string, reason: string) => api.post(`/admin/agents/invite-requests/${id}/reject`, { reason }),
+
+  getPendingLocations: () => api.get("/admin/locations/pending"),
+  verifyLocation: (type: "state" | "lga" | "ward", id: string) => 
+    api.post(`/admin/locations/${type}/${id}/verify`),
+  syncLocations: () => api.post("/admin/sync-locations"),
+  getPendingOfficialAgents: () => api.get("/admin/agents/pending-official"),
+  approveOfficialAgent: (id: string, data?: { hubId?: string }) => api.post(`/admin/agents/${id}/approve-official`, data),
+  deleteOfficialAgent: (id: string) => api.delete(`/admin/agents/${id}/official`),
+  assignAgentToHub: (agentId: string, hubId: string | null) => api.put(`/admin/agents/${agentId}/assign-hub`, { hubId }),
+  getFactories: () => api.get("/admin/factories"),
 };

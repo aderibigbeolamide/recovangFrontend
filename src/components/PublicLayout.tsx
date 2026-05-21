@@ -41,10 +41,11 @@ export default function PublicLayout() {
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  const isDark = pathname === "/" && !scrolled;
+  const isHomePage = pathname === "/";
+  const showDarkHeader = isHomePage && !scrolled;
 
   return (
-    <div className="min-h-screen bg-cream">
+    <div className="relative min-h-screen bg-cream">
       <div className="bg-charcoal py-2 text-center text-[11px] font-bold uppercase tracking-widest text-white/70">
         <span className="text-accent animate-pulse">●</span>
         {" "}Live in Lagos · Abuja · Port Harcourt{" "}
@@ -57,17 +58,17 @@ export default function PublicLayout() {
           "sticky top-0 z-40 transition-all duration-300",
           scrolled
             ? "border-b border-bordergray/50 bg-cream/90 backdrop-blur-2xl shadow-soft"
-            : isDark
+            : showDarkHeader
             ? "bg-transparent border-b border-transparent"
-            : "bg-cream/95 backdrop-blur-xl"
+            : "bg-cream/95 backdrop-blur-xl border-b border-bordergray/50"
         )}
       >
         <div className="container-page flex h-16 items-center justify-between sm:h-20">
           <Link to="/" className="flex items-center group" aria-label="Recovang home">
-            <Logo variant={isDark ? "white" : undefined} />
+            <Logo variant={showDarkHeader ? "white" : undefined} />
           </Link>
 
-          <nav className="hidden items-center gap-0.5 lg:flex">
+          <nav className="hidden items-center gap-1 md:flex">
             {NAV.map((item) => (
               <NavLink
                 key={item.to}
@@ -75,11 +76,11 @@ export default function PublicLayout() {
                 end={item.to === "/"}
                 className={({ isActive }) =>
                   cn(
-                    "rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200",
-                    isDark
-                      ? "text-white/75 hover:text-white hover:bg-white/10"
-                      : "text-charcoal/70 hover:text-charcoal hover:bg-charcoal/5",
-                    isActive && (isDark ? "bg-white/12 text-white" : "bg-charcoal/6 text-charcoal")
+                    "rounded-full px-4 py-2 text-sm font-bold transition-all duration-200",
+                    showDarkHeader
+                      ? "text-white/90 hover:text-white hover:bg-white/10"
+                      : "text-charcoal hover:bg-charcoal/5",
+                    isActive && (showDarkHeader ? "bg-white/20 text-white" : "bg-charcoal/10 text-charcoal")
                   )
                 }
               >
@@ -88,7 +89,7 @@ export default function PublicLayout() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 lg:flex">
+          <div className="hidden items-center gap-2 md:flex">
             {isAuthed ? (
               <>
                 <Link to={dashboardHref} className="btn-primary btn-sm">
@@ -98,14 +99,14 @@ export default function PublicLayout() {
                   to={dashboardHref}
                   className={cn(
                     "flex items-center gap-2 rounded-full border py-1 pl-1 pr-3 transition",
-                    isDark
+                    showDarkHeader
                       ? "border-white/20 bg-white/10 hover:bg-white/20"
                       : "border-bordergray bg-white hover:border-charcoal/20"
                   )}
                   aria-label={`Continue as ${user?.name}`}
                 >
                   <Avatar letters={user?.avatarLetters ?? "?"} tone="gold" size={28} />
-                  <span className={cn("hidden text-xs font-bold xl:inline", isDark ? "text-white" : "text-charcoal")}>
+                  <span className={cn("hidden text-xs font-bold xl:inline", showDarkHeader ? "text-white" : "text-charcoal")}>
                     {user?.name?.split(" ")[0] ?? "Account"}
                   </span>
                 </Link>
@@ -115,8 +116,8 @@ export default function PublicLayout() {
                 <Link
                   to="/auth/login"
                   className={cn(
-                    "btn btn-sm rounded-full px-4 py-2 font-semibold transition",
-                    isDark ? "text-white/80 hover:bg-white/10 hover:text-white" : "btn-ghost"
+                    "btn btn-sm rounded-full px-4 py-2 font-bold transition",
+                    showDarkHeader ? "text-white hover:bg-white/10" : "text-charcoal hover:bg-charcoal/5"
                   )}
                 >
                   Sign in
@@ -130,8 +131,8 @@ export default function PublicLayout() {
 
           <button
             className={cn(
-              "lg:hidden grid h-10 w-10 place-items-center rounded-xl border transition",
-              isDark ? "border-white/20 bg-white/10 text-white hover:bg-white/20" : "border-bordergray bg-white text-charcoal"
+              "md:hidden grid h-10 w-10 place-items-center rounded-xl border transition",
+              showDarkHeader ? "border-white/20 bg-white/10 text-white hover:bg-white/20" : "border-bordergray bg-white text-charcoal"
             )}
             onClick={() => setOpen(true)}
             aria-label="Open menu"
@@ -213,7 +214,7 @@ export default function PublicLayout() {
         )}
       </AnimatePresence>
 
-      <main>
+      <main className={cn(isHomePage && !scrolled && "-mt-16 sm:-mt-20")}>
         <Outlet />
       </main>
 
@@ -227,29 +228,7 @@ function Footer() {
     <footer className="bg-charcoal text-white">
       <div className="relative overflow-hidden">
         <div className="container-page py-20">
-          <div className="mb-16 grid gap-10 lg:grid-cols-12">
-            <div className="lg:col-span-7">
-              <h2 className="text-display font-extrabold leading-[0.95] text-balance">
-                Your <span className="text-gradient-gold">rubbish</span> is somebody's <span className="text-gradient-gold">raw material.</span>
-              </h2>
-              <p className="mt-5 max-w-xl text-lg text-white/60">
-                Join 62,000 Africans cashing out every drop. Bank, airtime, bills — paid in seconds.
-              </p>
-            </div>
-            <div className="lg:col-span-5 lg:flex lg:items-end lg:justify-end">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Link to="/auth/register" className="btn-gold btn-lg">Start earning <ArrowRight size={16} /></Link>
-                <Link
-                  to="/find-hub"
-                  className="btn-lg inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/8 px-7 py-4 text-base font-bold text-white transition hover:bg-white/15"
-                >
-                  Find a hub
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid gap-10 lg:grid-cols-12 pt-12 border-t border-white/10">
+          <div className="grid gap-10 lg:grid-cols-12 pt-12">
             <div className="lg:col-span-4">
               <Logo variant="white" />
               <p className="mt-4 max-w-sm text-sm text-white/55 leading-relaxed">

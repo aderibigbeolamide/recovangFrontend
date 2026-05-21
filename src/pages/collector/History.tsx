@@ -1,39 +1,47 @@
 import { useState } from "react";
-import { ArrowDown, Calendar, ChevronDown, Download, Filter, Search } from "lucide-react";
+import { ArrowDown, Calendar, ChevronDown, Download, Filter, Search, Trash2, History as HistoryIcon, Wallet, Recycle, Coins, Loader2 } from "lucide-react";
 import { PageHeader, StatusPill, KPICard } from "@/components/ui";
 import { CategoryIcon } from "@/components/illustrations";
-import { formatNaira } from "@/lib/cn";
-import { Coins, Recycle, Wallet } from "lucide-react";
-
-const ROWS = [
-  { id: "RX-2419", date: "Apr 24, 2026 · 10:42", hub: "Surulere Hub", agent: "Bola A.", cat: "PET Bottles", kg: 4.2, rate: 200, amt: 840, status: "verified" },
-  { id: "RX-2402", date: "Apr 22, 2026 · 14:18", hub: "Surulere Hub", agent: "Bola A.", cat: "Cardboard", kg: 8.0, rate: 80, amt: 480, status: "verified" },
-  { id: "RX-2391", date: "Apr 19, 2026 · 09:08", hub: "Yaba Centre", agent: "Tope D.", cat: "Aluminium Cans", kg: 1.1, rate: 600, amt: 660, status: "verified" },
-  { id: "RX-2378", date: "Apr 16, 2026 · 16:55", hub: "Surulere Hub", agent: "Bola A.", cat: "Mixed Paper", kg: 5.6, rate: 60, amt: 280, status: "verified" },
-  { id: "RX-2364", date: "Apr 13, 2026 · 11:21", hub: "Lekki Hub", agent: "Folake A.", cat: "PET Bottles", kg: 3.2, rate: 200, amt: 640, status: "verified" },
-  { id: "RX-2347", date: "Apr 10, 2026 · 13:45", hub: "Surulere Hub", agent: "Bola A.", cat: "Glass Bottles", kg: 12.4, rate: 30, amt: 372, status: "verified" },
-  { id: "RX-2331", date: "Apr 07, 2026 · 08:32", hub: "Surulere Hub", agent: "Bola A.", cat: "PET Bottles", kg: 6.8, rate: 200, amt: 1360, status: "verified" },
-  { id: "RX-2318", date: "Apr 04, 2026 · 17:12", hub: "Yaba Centre", agent: "Tope D.", cat: "Cardboard", kg: 4.0, rate: 80, amt: 320, status: "disputed" },
-  { id: "RX-2304", date: "Apr 02, 2026 · 12:38", hub: "Surulere Hub", agent: "Bola A.", cat: "Aluminium Cans", kg: 2.4, rate: 600, amt: 1440, status: "verified" },
-  { id: "RX-2289", date: "Mar 30, 2026 · 10:05", hub: "Surulere Hub", agent: "Bola A.", cat: "PET Bottles", kg: 5.0, rate: 200, amt: 1000, status: "verified" },
-];
-
-import { useSubmissions, useDashboard } from "@/hooks/useCollector";
+import { formatNaira, cn } from "@/lib/cn";
+import { CollectorSubmissionDrawer } from "@/components/CollectorSubmissionDrawer";
+import { useSubmissions, useDashboard, useWithdrawalHistory, useDeleteWithdrawal } from "@/hooks/useCollector";
 
 export default function CollectorHistory() {
   const [open, setOpen] = useState<string | null>(null);
+  const [tab, setTab] = useState<"submissions" | "payouts">("submissions");
+  
   const { data: submissions, isLoading: loadingSubs } = useSubmissions();
+  const { data: withdrawals, isLoading: loadingWiths } = useWithdrawalHistory();
   const { data: dashboard, isLoading: loadingDash } = useDashboard();
+  const deleteMutation = useDeleteWithdrawal();
 
-  if (loadingSubs || loadingDash) return <div className="p-20 text-center font-bold">Loading history...</div>;
+  if (loadingSubs || loadingWiths || loadingDash) {
+    return (
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="font-bold text-textgray">Loading history...</p>
+      </div>
+    );
+  }
 
   const totalKg = submissions?.reduce((acc: number, s: any) => acc + Number(s.totalWeightKg), 0) || 0;
+
+  const handleDeletePayout = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm("Hide this transaction from history?")) {
+      try {
+        await deleteMutation.mutateAsync(id);
+      } catch (err) {
+        import("react-hot-toast").then(m => m.default.error("Failed to hide transaction"));
+      }
+    }
+  };
 
   return (
     <>
       <PageHeader
         eyebrow="History"
-        title="All your submissions"
+        title="Track your progress"
         subtitle="Every drop, photo, agent and naira — searchable, filterable, exportable."
         actions={<><button className="btn-outline"><Download size={14} /> Export CSV</button></>}
       />
@@ -44,56 +52,135 @@ export default function CollectorHistory() {
         <KPICard label="Total earned" value={formatNaira(dashboard?.totalEarned / 100)} sub={`Avg ${formatNaira((dashboard?.totalEarned / 100) / (submissions?.length || 1))}/drop`} icon={Coins} variant="gold" />
       </div>
 
+      <div className="mt-8 flex gap-1 rounded-2xl bg-cream p-1.5 w-fit">
+        <button 
+          onClick={() => setTab("submissions")}
+          className={cn("flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition", tab === "submissions" ? "bg-white shadow-sm text-primary" : "text-textgray hover:text-charcoal")}
+        >
+          <Recycle size={16} /> Submissions
+        </button>
+        <button 
+          onClick={() => setTab("payouts")}
+          className={cn("flex items-center gap-2 rounded-xl px-6 py-2.5 text-sm font-bold transition", tab === "payouts" ? "bg-white shadow-sm text-primary" : "text-textgray hover:text-charcoal")}
+        >
+          <Wallet size={16} /> Payouts
+        </button>
+      </div>
+
       <div className="mt-6 card p-4">
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-[220px] flex-1">
             <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-textgray" />
-            <input className="input pl-10" placeholder="Search by drop ID, hub, agent…" />
+            <input className="input pl-10" placeholder={`Search ${tab === "submissions" ? "drop ID, hub, agent" : "reference, method"}…`} />
           </div>
-          <button className="btn-outline btn-sm"><Filter size={13} /> All categories</button>
+          <button className="btn-outline btn-sm"><Filter size={13} /> Filters</button>
           <button className="btn-outline btn-sm"><Calendar size={13} /> Last 30 days</button>
-          <button className="btn-outline btn-sm">All statuses <ChevronDown size={12} /></button>
         </div>
       </div>
 
       <div className="mt-6 card overflow-hidden">
         <table className="tbl">
-          <thead>
-            <tr><th>Drop ID</th><th>Date</th><th>Hub / Agent</th><th>Material</th><th>Weight</th><th className="text-right">Amount</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            {submissions?.map((s: any) => (
-              <tr key={s.id} className="cursor-pointer" onClick={() => setOpen(open === s.id ? null : s.id)}>
-                <td className="font-mono text-xs font-bold text-primary">{s.id.slice(0, 8).toUpperCase()}</td>
-                <td className="text-textgray">{new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
-                <td>
-                  <div className="font-bold">{s.hub?.name || "Mobile Agent"}</div>
-                  <div className="text-[11px] text-textgray">{s.agent?.user?.firstName || "Pending"}</div>
-                </td>
-                <td>
-                  <div className="flex items-center gap-2">
-                    <CategoryIcon category={s.items[0]?.wasteCategory?.name || "Mixed"} size={26} />
-                    {s.items[0]?.wasteCategory?.name || "Mixed"}
-                  </div>
-                </td>
-                <td className="font-mono">{s.totalWeightKg} kg</td>
-                <td className="text-right"><span className="money text-success">+{formatNaira(s.totalAmount / 100)}</span></td>
-                <td><StatusPill status={s.status === "verified" || s.status === "VERIFIED" ? "success" : s.status === "pending" || s.status === "PENDING" ? "pending" : "error"} label={s.status.toLowerCase()} /></td>
-              </tr>
-            ))}
-            {(!submissions || submissions.length === 0) && (
-              <tr><td colSpan={7} className="py-20 text-center text-textgray">No submissions found.</td></tr>
-            )}
-          </tbody>
+          {tab === "submissions" ? (
+            <>
+              <thead>
+                <tr><th>Drop ID</th><th>Date</th><th>Hub / Agent</th><th>Material</th><th>Weight</th><th className="text-right">Amount</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                {submissions?.map((s: any) => (
+                  <tr key={s.id} className="cursor-pointer transition hover:bg-cream/30" onClick={() => setOpen(s.id)}>
+                    <td className="font-mono text-xs font-bold text-primary">{s.id.slice(0, 8).toUpperCase()}</td>
+                    <td className="text-textgray text-sm">{new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                    <td>
+                      <div className="font-bold text-sm">{s.hub?.name || "Mobile Agent"}</div>
+                      <div className="text-[11px] text-textgray">{s.agent?.user?.firstName || "Pending Verification"}</div>
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-2 text-sm">
+                        <CategoryIcon category={s.items[0]?.wasteCategory?.name || "Mixed"} size={26} />
+                        {s.items[0]?.wasteCategory?.name || "Mixed"}
+                      </div>
+                    </td>
+                    <td className="font-mono text-sm">{s.totalWeightKg} kg</td>
+                    <td className="text-right"><span className="money text-success">+{formatNaira(s.totalAmount / 100)}</span></td>
+                    <td>
+                      <StatusPill 
+                        status={
+                          s.status === "VERIFIED" || s.status === "verified" ? "success" :
+                          s.status === "PENDING" || s.status === "pending" ? "pending" :
+                          "error"
+                        } 
+                        label={s.status.toLowerCase()} 
+                      />
+                    </td>
+                  </tr>
+                ))}
+                {(!submissions || submissions.length === 0) && (
+                  <tr><td colSpan={7} className="py-20 text-center text-textgray">No submissions found.</td></tr>
+                )}
+              </tbody>
+            </>
+          ) : (
+            <>
+              <thead>
+                <tr><th>Reference</th><th>Date</th><th>Method</th><th>Details</th><th className="text-right">Amount</th><th>Status</th><th></th></tr>
+              </thead>
+              <tbody>
+                {withdrawals?.map((w: any) => (
+                  <tr key={w.id} className="group transition hover:bg-cream/30">
+                    <td className="font-mono text-xs font-bold text-primary">{(w.reference || w.id.slice(0, 8)).toUpperCase()}</td>
+                    <td className="text-textgray text-sm">{new Date(w.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</td>
+                    <td className="text-sm font-bold capitalize">{w.type.replace('_', ' ').toLowerCase()}</td>
+                    <td className="text-xs text-textgray">
+                      {w.type === 'BANK_TRANSFER' ? (
+                        <>GTBank · {w.details?.accountNumber || "****"}</>
+                      ) : (
+                        <>{w.details?.network || 'Telecom'} · {w.details?.phoneNumber || "****"}</>
+                      )}
+                    </td>
+                    <td className="text-right font-bold text-red-500">-{formatNaira(w.amount)}</td>
+                    <td>
+                      <StatusPill 
+                        status={
+                          w.status === "COMPLETED" ? "success" :
+                          w.status === "PENDING" ? "pending" :
+                          w.status === "FAILED" || w.status === "REJECTED" ? "error" :
+                          "warning"
+                        } 
+                        label={w.status.toLowerCase()} 
+                      />
+                    </td>
+                    <td className="text-right">
+                      <button 
+                        onClick={(e) => handleDeletePayout(w.id, e)}
+                        className="p-2 text-textgray hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {(!withdrawals || withdrawals.length === 0) && (
+                  <tr><td colSpan={7} className="py-20 text-center text-textgray">No payout history found.</td></tr>
+                )}
+              </tbody>
+            </>
+          )}
         </table>
+        
         <div className="flex items-center justify-between border-t border-bordergray bg-cream/40 px-6 py-4 text-sm">
-          <div className="text-textgray">Showing <span className="font-bold text-charcoal">{submissions?.length || 0}</span> submissions</div>
+          <div className="text-textgray">
+            Showing <span className="font-bold text-charcoal">
+              {tab === "submissions" ? submissions?.length || 0 : withdrawals?.length || 0}
+            </span> items
+          </div>
           <div className="flex gap-2">
             <button className="btn-outline btn-sm disabled:opacity-50">Previous</button>
             <button className="btn-outline btn-sm disabled:opacity-50">Next</button>
           </div>
         </div>
       </div>
+      
+      <CollectorSubmissionDrawer submissionId={open} onClose={() => setOpen(null)} />
     </>
   );
 }

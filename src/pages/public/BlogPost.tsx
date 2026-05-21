@@ -202,8 +202,8 @@ function ShareLink({
 }
 
 /** Tiny markdown renderer (h2, blockquote, lists, paragraphs, bold). Not a full md parser — enough for our editorial format. */
-function Prose({ body }: { body: string }) {
-  const blocks = body.trim().split(/\n\n+/);
+function Prose({ body = "" }: { body?: string }) {
+  const blocks = (body || "").trim().split(/\n\n+/);
   return (
     <div className="prose-recovang">
       {blocks.map((block, i) => {

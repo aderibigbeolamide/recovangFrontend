@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 export default function Login() {
   const nav = useNavigate();
   const loc = useLocation();
-  const { setSession, user, token } = useAuth();
+  const { setSession, user, token, signOut } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
@@ -19,7 +19,13 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (token && user) nav(`/${user.role}/dashboard`, { replace: true });
+    if (token && user) {
+      if (user.role === "agent" && user.agentSubType === "official" && !user.isApproved) {
+        // Stay on login or redirect to register/pending
+        return;
+      }
+      nav(`/${user.role}/dashboard`, { replace: true });
+    }
   }, [token, user, nav]);
 
   const fromState = (loc.state as { from?: string } | null)?.from;
@@ -31,6 +37,19 @@ export default function Login() {
     try {
       const { user, token } = await login({ email: email.trim(), password });
       setSession(user, token);
+      
+      if (!user.isEmailVerified) {
+        toast.error("Please verify your email to continue.");
+        nav("/auth/register");
+        return;
+      }
+
+      if (user.role === "agent" && user.agentSubType === "official" && !user.isApproved) {
+        toast.error("Your account is still under review by our hiring team. You will be notified via email once approved.");
+        signOut();
+        return;
+      }
+
       nav(fromState || `/${user.role}/dashboard`, { replace: true });
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || "Could not sign in. Please try again.");

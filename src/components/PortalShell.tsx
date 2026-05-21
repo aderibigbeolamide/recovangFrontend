@@ -1,5 +1,5 @@
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { useState, type ReactNode } from "react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect, type ReactNode } from "react";
 import { Logo, LogoMark } from "./Logo";
 import { cn } from "@/lib/cn";
 import { ChevronRight, LogOut, Menu, Search, Settings, X, Eye, ShieldAlert } from "lucide-react";
@@ -8,6 +8,7 @@ import { Avatar } from "./ui";
 import { NotificationDropdown } from "./NotificationDropdown";
 import { AvatarMenu } from "./AvatarMenu";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
 
 export interface NavItem {
   to: string;
@@ -26,7 +27,16 @@ interface PortalShellProps {
 export default function PortalShell({ brand, nav, brandTone = "primary", portalBase }: PortalShellProps) {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const { isReadOnly } = useAuth();
+  const navigate = useNavigate();
+  const { isReadOnly, user, signOut } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === "agent" && user?.agentSubType === "official" && !user?.isApproved) {
+      toast.error("Your application is still under review. Please wait for email approval.");
+      signOut();
+      navigate("/", { replace: true });
+    }
+  }, [user, signOut, navigate]);
 
   const active = nav.find((n) => location.pathname.startsWith(n.to));
   const crumb = active?.label ?? "Dashboard";
@@ -189,7 +199,11 @@ function SidebarContent({ brand, nav, portalBase, onNav }: { brand: string; nav:
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto pb-4 hide-scrollbar">
         {nav.map((n) => {
-          const isActive = location.pathname.startsWith(n.to) || location.pathname === n.to;
+          const currentPath = location.pathname + location.search;
+          const isActive = n.to.includes("?") 
+            ? currentPath.includes(n.to) 
+            : (location.pathname === n.to || (n.to !== portalBase && location.pathname.startsWith(n.to)));
+
           const isDisabled = !isApproved && (
             n.label.toLowerCase().includes("submit") ||
             n.label.toLowerCase().includes("withdraw") ||
@@ -206,17 +220,17 @@ function SidebarContent({ brand, nav, portalBase, onNav }: { brand: string; nav:
                 if (isDisabled) { e.preventDefault(); return; }
                 onNav?.();
               }}
-              className={({ isActive: a }) => cn(
+              className={() => cn(
                 "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200",
-                a && !isDisabled
+                isActive && !isDisabled
                   ? "bg-white/14 text-white"
                   : "text-white/55 hover:bg-white/8 hover:text-white/90",
                 isDisabled && "opacity-35 cursor-not-allowed"
               )}
             >
-              {({ isActive: a }) => (
+              {() => (
                 <>
-                  {a && !isDisabled && (
+                  {isActive && !isDisabled && (
                     <motion.div
                       layoutId="sidebar-active"
                       className="absolute left-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-full bg-accent"
@@ -224,7 +238,7 @@ function SidebarContent({ brand, nav, portalBase, onNav }: { brand: string; nav:
                   )}
                   <span className={cn(
                     "flex h-7 w-7 items-center justify-center rounded-lg transition-all",
-                    a && !isDisabled ? "bg-accent text-charcoal" : "bg-white/8 text-white/60"
+                    isActive && !isDisabled ? "bg-accent text-charcoal" : "bg-white/8 text-white/60"
                   )}>
                     {n.icon}
                   </span>
@@ -274,30 +288,87 @@ function SidebarContent({ brand, nav, portalBase, onNav }: { brand: string; nav:
 }
 
 function ApprovalBanner() {
-  const { user } = useAuth();
-  if (user?.isApproved || user?.role?.includes("admin")) return null;
-  const isPendingKYC = user?.kycStatus === "PENDING";
+  const { user, updateUser } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
+  
+  // Auto-refresh on mount and every 30s if not approved
+  useEffect(() => {
+    if (user?.isApproved || user?.role?.includes("admin")) return;
+    
+    const checkStatus = async () => {
+      try {
+        const { me } = await import("@/services/auth.service");
+        const freshUser = await me();
+        if (freshUser && freshUser.isApproved) {
+          updateUser(freshUser);
+          window.location.reload(); 
+        }
+      } catch (err) {
+        // Silent fail for auto-check
+      }
+    };
+
+    checkStatus(); // Check immediately on mount
+    const interval = setInterval(checkStatus, 30000); // Check every 30s
+    return () => clearInterval(interval);
+  }, [user?.isApproved, user?.role, updateUser]);
+
+  if ((user?.isApproved && user?.kycStatus === "COMPLETED") || user?.role?.includes("admin")) return null;
+  const isKycNeeded = user?.kycStatus !== "COMPLETED";
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const { me } = await import("@/services/auth.service");
+      const freshUser = await me();
+      if (freshUser) {
+        updateUser(freshUser);
+        if (freshUser.isApproved) {
+          window.location.reload(); // Refresh to update all routes
+        }
+      }
+    } catch (err) {
+      console.error("Failed to refresh status:", err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const isOfficial = user?.role === "agent" && user?.agentSubType === "official";
+  const exempt = isOfficial || user?.role?.includes("admin");
+  if (user?.isApproved && (user?.kycStatus === "COMPLETED" || exempt)) return null;
 
   return (
     <div className="sticky top-0 z-50 flex items-center justify-between bg-accent px-4 py-2.5 text-charcoal">
       <div className="flex items-center gap-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-charcoal text-accent shadow-lg shrink-0">
-          <ShieldAlert size={14} />
+          <ShieldAlert size={14} className={refreshing ? "animate-spin" : ""} />
         </div>
         <div>
           <span className="text-[10px] font-black uppercase tracking-widest block leading-none mb-0.5">Account Status</span>
           <span className="text-sm font-bold leading-tight">
-            {isPendingKYC
-              ? "Please complete your KYC to speed up approval."
-              : "Your application is currently under review by our admin team."}
+            {!user?.isApproved 
+              ? "Your application is currently under review by our admin team."
+              : "Please complete your KYC to unlock all features."}
           </span>
         </div>
       </div>
-      {isPendingKYC && (
-        <Link to={`/${user?.role}/settings`} className="hidden rounded-full bg-charcoal px-4 py-1.5 text-xs font-bold text-white transition hover:bg-charcoal/80 sm:block shrink-0">
-          Complete KYC
-        </Link>
-      )}
+      <div className="flex items-center gap-2">
+        {!user?.isApproved && (
+          <button 
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="rounded-full bg-charcoal/10 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest transition hover:bg-charcoal/20 flex items-center gap-2"
+          >
+            {refreshing ? "Checking..." : "Refresh Status"}
+          </button>
+        )}
+        {isKycNeeded && (
+          <Link to={`/${user?.role}/settings`} className="hidden rounded-full bg-charcoal px-4 py-1.5 text-xs font-bold text-white transition hover:bg-charcoal/80 sm:block shrink-0">
+            Complete KYC
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

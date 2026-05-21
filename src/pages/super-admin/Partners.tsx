@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { Building2, Factory, FileSignature, MapPin, Plus, Recycle, Star, Truck, Upload } from "lucide-react";
+import { Building2, Check, ExternalLink, Factory, FileSignature, Mail, MapPin, Phone, Plus, Recycle, Star, Trash2, Truck, Upload, UserCheck, X } from "lucide-react";
 import { KPICard, PageHeader, StatusPill } from "@/components/ui";
 import { Modal } from "@/components/Modal";
+import { useEffect } from "react";
+import { adminService } from "@/services/admin";
+import { toast } from "react-hot-toast";
 
 const LOGISTICS = [
   { name: "GreenWheels Nigeria", trucks: 8, rating: 4.9, regions: "Lagos · Ibadan", tier: "Gold" },
@@ -34,11 +37,42 @@ const TIER_TONE: Record<string, string> = {
   Bronze: "bg-cream text-charcoal/70",
 };
 
-type Section = "logistics" | "hubs" | "brands";
+type Section = "logistics" | "hubs" | "brands" | "fleet";
 
 export default function SuperAdminPartners() {
   const [tab, setTab] = useState<Section>("logistics");
   const [openModal, setOpenModal] = useState<Section | null>(null);
+  const [pendingFleet, setPendingFleet] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (tab === "fleet") {
+      fetchPendingFleet();
+    }
+  }, [tab]);
+
+  async function fetchPendingFleet() {
+    setLoading(true);
+    try {
+      const res = await adminService.getPendingOfficialAgents();
+      setPendingFleet(res.data.data);
+    } catch (err) {
+      toast.error("Failed to load agent applications");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleApproveAgent(id: string) {
+    if (!confirm("Are you sure you want to approve this agent for the official fleet?")) return;
+    try {
+      await adminService.approveOfficialAgent(id);
+      toast.success("Agent approved successfully!");
+      fetchPendingFleet();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "Failed to approve agent");
+    }
+  }
 
   return (
     <>
@@ -69,6 +103,7 @@ export default function SuperAdminPartners() {
             { id: "logistics", label: "Logistics fleets", icon: Truck },
             { id: "hubs", label: "Satellite hubs", icon: Building2 },
             { id: "brands", label: "Brands & factories", icon: Recycle },
+            { id: "fleet", label: "Agent Applications", icon: FileSignature },
           ].map((t) => (
             <button
               key={t.id}
@@ -137,6 +172,79 @@ export default function SuperAdminPartners() {
                     <td className="text-right"><button className="btn-ghost btn-sm">Open</button></td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {tab === "fleet" && (
+          <div className="overflow-x-auto">
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>Applicant</th>
+                  <th>Applied for</th>
+                  <th>Location</th>
+                  <th>Contact</th>
+                  <th>Joined</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr><td colSpan={6} className="py-12 text-center text-textgray">Loading applications…</td></tr>
+                ) : pendingFleet.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-12 text-center text-textgray">
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="h-10 w-10 rounded-full bg-cream grid place-items-center"><FileSignature size={20} /></div>
+                        <div className="text-sm font-bold">No pending fleet applications</div>
+                        <div className="text-xs">New official agent signups will appear here for review.</div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  pendingFleet.map((a) => (
+                    <tr key={a.id}>
+                      <td>
+                        <div className="font-extrabold">{a.firstName} {a.lastName}</div>
+                        <div className="text-[10px] text-textgray uppercase tracking-wider font-bold">Official Candidate</div>
+                      </td>
+                      <td>
+                        <span className="badge bg-mint text-primary text-[10px] uppercase font-bold tracking-tight">
+                          {a.workMode === "hub" ? "Hub-Based Agent" : "Mobile Field Agent"}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="flex items-center gap-1.5 text-sm">
+                          <MapPin size={11} className="text-textgray" /> {a.lga}, {a.state}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="grid gap-0.5">
+                          <div className="flex items-center gap-1.5 text-[11px]"><Mail size={10} className="text-textgray" /> {a.email}</div>
+                          <div className="flex items-center gap-1.5 text-[11px] font-mono"><Phone size={10} className="text-textgray" /> {a.phoneNumber}</div>
+                        </div>
+                      </td>
+                      <td className="text-sm font-mono text-textgray">
+                        {new Date(a.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="text-right">
+                        <div className="inline-flex gap-1">
+                          <button 
+                            className="btn-primary btn-sm px-3 text-[11px]"
+                            onClick={() => handleApproveAgent(a.id)}
+                          >
+                            <UserCheck size={12} /> Approve
+                          </button>
+                          <button className="btn-ghost btn-sm text-error">
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

@@ -6,6 +6,7 @@ import { formatNaira } from "@/lib/cn";
 import { usePricing, useNearbyHubs, useSubmitWaste } from "@/hooks/useCollector";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import api from "@/services/api";
 
 function StepSection({ n, title, children }: { n: string, title: string, children: React.ReactNode }) {
   return (
@@ -56,6 +57,7 @@ export default function CollectorSubmit() {
   const [pick, setPick] = useState<Record<string, { qty: number, id: string, rate: number, categoryName: string }>>({});
   const [selectedHub, setSelectedHub] = useState<string | null>(null);
   const [ticket, setTicket] = useState<{ id: string, ref: string } | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
 
   // Deduplicate pricing by category ID to avoid showing same material twice
   const uniquePricing = useMemo(() => {
@@ -99,6 +101,18 @@ export default function CollectorSubmit() {
       };
       
       const res = await submitWaste.mutateAsync(payload);
+      
+      if (photo) {
+        const formData = new FormData();
+        formData.append("before", photo);
+        await api.post(`/submissions/${res.data.id}/photos`, formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        }).catch(err => {
+          console.error("Failed to upload photo:", err);
+          toast.error("Waste submitted, but failed to upload photo");
+        });
+      }
+
       setTicket({ id: res.data.id, ref: res.data.id.slice(0, 8).toUpperCase() });
       toast.success("Drop ticket generated!");
     } catch (err: any) {
@@ -166,22 +180,43 @@ export default function CollectorSubmit() {
           {/* Step 2 — hub */}
           <StepSection n="2" title="Pick a hub">
             {loadingHubs ? (
-              <div className="py-10 text-center text-textgray animate-pulse font-bold">Finding nearby hubs...</div>
+              <div className="py-10 text-center text-textgray animate-pulse font-bold">Finding hubs...</div>
             ) : (
               <div className="grid gap-2">
                 {hubs?.map((h: any) => (
                   <label key={h.id} className={`flex cursor-pointer items-center gap-3 rounded-2xl border p-4 transition ${selectedHub === h.id ? "border-primary bg-mint/40" : "border-bordergray hover:border-primary/40"}`}>
                     <input type="radio" name="hub" checked={selectedHub === h.id} onChange={() => setSelectedHub(h.id)} className="accent-primary" />
                     <MapPin size={16} className="text-primary" />
-                    <span className="flex-1 text-sm font-bold">{h.name} <span className="ml-1 text-xs text-textgray">({h.distance?.toFixed(1) || "?"} km)</span></span>
+                    <span className="flex-1 text-sm font-bold">{h.name} {h.distance !== null && h.distance !== undefined && <span className="ml-1 text-xs text-textgray">({h.distance?.toFixed(1)} km)</span>}</span>
                     <span className="badge-mint">Open</span>
                   </label>
                 ))}
+                
+                {/* No Hubs Found State */}
                 {(!hubs || hubs.length === 0) && (
                   <div className="p-10 text-center text-textgray border-2 border-dashed border-bordergray rounded-2xl">
-                    <p className="font-bold">No hubs found within 10km of your location.</p>
-                    <button className="text-primary font-bold mt-2 underline" onClick={() => setCoords({ lat: 6.5244, lng: 3.3792 })}>Try default location (Lagos)</button>
+                    <MapPin size={24} className="mx-auto mb-3 text-textgray/40" />
+                    <p className="font-bold">
+                      {coords ? "No hubs found within 10km of your location." : "No collection hubs are available at the moment."}
+                    </p>
+                    <div className="mt-4 flex flex-col gap-2">
+                      {coords && (
+                        <button className="text-primary font-bold underline" onClick={() => setCoords(null)}>
+                          Show all available hubs
+                        </button>
+                      )}
+                      <button className="text-xs text-textgray" onClick={() => setCoords({ lat: 6.5244, lng: 3.3792 })}>
+                        Try default location (Lagos)
+                      </button>
+                    </div>
                   </div>
+                )}
+
+                {/* Manual Override Link */}
+                {hubs && hubs.length > 0 && coords && (
+                  <button className="mt-2 text-center text-[11px] text-textgray underline" onClick={() => setCoords(null)}>
+                    Not seeing your hub? Show all hubs
+                  </button>
                 )}
               </div>
             )}
@@ -190,12 +225,26 @@ export default function CollectorSubmit() {
           {/* Step 3 — photo */}
           <StepSection n="3" title="Add a photo (optional)">
             <div className="grid gap-3 sm:grid-cols-2">
-              <button className="card flex h-32 flex-col items-center justify-center gap-2 border-dashed text-textgray hover:border-primary hover:text-primary">
+              <label className="card flex h-32 flex-col items-center justify-center gap-2 border-dashed text-textgray hover:border-primary hover:text-primary cursor-pointer relative overflow-hidden">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      setPhoto(e.target.files[0]);
+                    }
+                  }}
+                />
                 <Camera size={24} />
                 <span className="text-sm font-bold">Take photo</span>
-              </button>
+              </label>
               <div className="card flex h-32 items-center justify-center border-bordergray bg-white/50 text-textgray">
-                <span className="text-xs">No photos selected</span>
+                {photo ? (
+                  <span className="text-xs font-bold text-charcoal truncate px-4">{photo.name}</span>
+                ) : (
+                  <span className="text-xs">No photos selected</span>
+                )}
               </div>
             </div>
           </StepSection>

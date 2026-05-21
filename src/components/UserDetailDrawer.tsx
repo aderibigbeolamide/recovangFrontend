@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   X, Mail, Phone, MapPin, Shield, Wallet, History, FileText, 
   CheckCircle2, AlertCircle, Clock, ExternalLink, UserCheck, UserX, MessageSquare, Send, Plus
@@ -9,9 +9,12 @@ import {
   useUserDetails, useSuspendUser, useUnsuspendUser, 
   useVerifyKYC, useRejectKYC, useUserNotes, useAddUserNote, useUserMessages 
 } from "@/hooks/useAdmin";
+import { useAuth } from "@/store/auth";
+import { Modal } from "./Modal";
 import { MessageUserModal } from "./MessageUserModal";
 import { PermissionGuard } from "./PermissionGuard";
-import { PERMISSIONS } from "@/constants/permissions";
+import { PERMISSIONS, PERMISSION_GROUPS } from "@/constants/permissions";
+import { useUpdateAdminPermissions } from "@/hooks/useAdmin";
 
 interface UserDetailDrawerProps {
   userId: string | null;
@@ -21,16 +24,34 @@ interface UserDetailDrawerProps {
 export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
   const [activeTab, setActiveTab] = useState("overview");
   const [showMessageModal, setShowMessageModal] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const [newNote, setNewNote] = useState("");
   
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role?.toLowerCase() === "super_admin";
+  const permissions = user?.permissions || [];
+  const has = (p: string) => isSuperAdmin || permissions.includes(p) || permissions.includes("ALL");
+
   const { data: details, isLoading } = useUserDetails(userId);
   const { mutate: suspendUser, isPending: isSuspending } = useSuspendUser();
   const { mutate: unsuspendUser, isPending: isUnsuspending } = useUnsuspendUser();
   const { mutate: verifyKYC, isPending: isVerifying } = useVerifyKYC();
   const { mutate: rejectKYC, isPending: isRejecting } = useRejectKYC();
-  const { data: notes, isLoading: isLoadingNotes } = useUserNotes(userId);
+  const { data: notes, isLoading: isLoadingNotes } = useUserNotes(userId, { enabled: !!userId && has(PERMISSIONS.USERS_NOTES) });
   const { mutate: addNote, isPending: isAddingNote } = useAddUserNote();
-  const { data: messages, isLoading: isLoadingMessages } = useUserMessages(userId);
+  const { data: messages, isLoading: isLoadingMessages } = useUserMessages(userId, { enabled: !!userId && has(PERMISSIONS.USERS_MESSAGE) });
+  
+  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [isUpdatingPerms, setIsUpdatingPerms] = useState(false);
+  const { mutate: updatePermissions } = useUpdateAdminPermissions();
+
+  const isTargetAdmin = details?.user?.role?.toUpperCase() === "ADMIN" || details?.user?.role?.toUpperCase() === "SUPER_ADMIN";
+
+  useEffect(() => {
+    if (details?.user?.permissions) {
+      setSelectedPermissions(details.user.permissions);
+    }
+  }, [details?.user?.permissions]);
 
   const handleAddNote = () => {
     if (!newNote || !userId) return;
@@ -39,7 +60,24 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
     });
   };
 
+  const togglePermission = (p: string) => {
+    setSelectedPermissions(prev => prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]);
+  };
+
+  const handleSavePermissions = () => {
+    if (!userId) return;
+    setIsUpdatingPerms(true);
+    updatePermissions({ id: userId, permissions: selectedPermissions }, {
+      onSuccess: () => setIsUpdatingPerms(false),
+      onError: () => setIsUpdatingPerms(false)
+    });
+  };
+
   if (!userId) return null;
+
+  const tabs = ["overview"];
+  if (isTargetAdmin) tabs.push("permissions");
+  tabs.push("documents", "financials", "notes", "messages", "logs");
 
   return (
     <div className={`fixed inset-y-0 right-0 z-50 w-full max-w-lg bg-white shadow-2xl transition-transform duration-300 transform ${userId ? "translate-x-0" : "translate-x-full"}`}>
@@ -74,12 +112,12 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-bordergray bg-cream/30 px-6 overflow-x-auto">
-          {["overview", "documents", "financials", "notes", "messages", "logs"].map((tab) => (
+        <div className="flex border-b border-bordergray bg-cream/30 px-6 overflow-x-auto no-scrollbar">
+          {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`border-b-2 px-4 py-3 text-xs font-bold uppercase tracking-widest transition-colors ${
+              className={`border-b-2 px-4 py-3 text-[10px] font-bold uppercase tracking-widest transition-colors whitespace-nowrap ${
                 activeTab === tab ? "border-primary text-primary" : "border-transparent text-textgray hover:text-charcoal"
               }`}
             >
@@ -157,6 +195,60 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
                 </div>
               )}
 
+              {activeTab === "permissions" && (
+                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="flex items-center justify-between border-b border-bordergray pb-4">
+                    <div>
+                      <h3 className="text-sm font-black">Manage Permissions</h3>
+                      <p className="text-[10px] text-textgray">Grant or revoke specific access rights for this admin.</p>
+                    </div>
+                    <button 
+                      className="btn-primary btn-sm px-6"
+                      onClick={handleSavePermissions}
+                      disabled={isUpdatingPerms}
+                    >
+                      {isUpdatingPerms ? "Saving..." : "Save Changes"}
+                    </button>
+                  </div>
+
+                  <label className="flex cursor-pointer items-center justify-between rounded-2xl bg-primary/5 border border-primary/20 p-4">
+                    <div>
+                      <div className="text-xs font-black text-primary uppercase tracking-widest">Master Access (Super Admin)</div>
+                      <div className="text-[10px] text-primary/70">Bypass all permission checks.</div>
+                    </div>
+                    <input 
+                      type="checkbox" 
+                      className="checkbox border-primary/30 text-primary" 
+                      checked={selectedPermissions.includes("ALL")}
+                      onChange={() => togglePermission("ALL")}
+                    />
+                  </label>
+
+                  {!selectedPermissions.includes("ALL") && (
+                    <div className="grid gap-6">
+                      {PERMISSION_GROUPS.map((group) => (
+                        <div key={group.name} className="space-y-3">
+                          <h4 className="text-[10px] font-bold uppercase tracking-widest text-textgray border-b border-bordergray pb-2">{group.name}</h4>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {group.permissions.map((p) => (
+                              <label key={p.key} className="flex cursor-pointer items-center gap-3 rounded-xl border border-bordergray/50 p-2.5 hover:bg-cream/20 transition-colors">
+                                <input 
+                                  type="checkbox" 
+                                  className="checkbox checkbox-sm" 
+                                  checked={selectedPermissions.includes(p.key)}
+                                  onChange={() => togglePermission(p.key)}
+                                />
+                                <span className="text-[11px] font-bold text-charcoal">{p.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {activeTab === "documents" && (
                 <div className="space-y-6">
                   {details.documents?.map((doc: any) => (
@@ -168,10 +260,24 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
                         </div>
                         <StatusPill status={doc.status?.toLowerCase() === "verified" ? "success" : "warning"} label={doc.status?.toUpperCase()} />
                       </div>
-                      <div className="aspect-video rounded-xl bg-charcoal/5 border border-bordergray relative group">
-                        <img src={doc.url} alt={doc.name} className="w-full h-full object-cover rounded-xl" />
+                      <div className="aspect-video rounded-xl bg-charcoal/5 border border-bordergray relative group flex items-center justify-center overflow-hidden">
+                        <img 
+                          src={doc.url} 
+                          alt={doc.name} 
+                          className="w-full h-full object-cover rounded-xl" 
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).parentElement!.classList.add('bg-mint/20');
+                            const icon = document.createElement('div');
+                            icon.innerHTML = '<div class="flex flex-col items-center text-primary font-bold"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg><span>View Document</span></div>';
+                            (e.target as HTMLImageElement).parentElement!.appendChild(icon.firstChild!);
+                          }}
+                        />
                         <div className="absolute inset-0 bg-charcoal/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="btn-primary btn-sm gap-2">
+                          <button 
+                            onClick={() => setSelectedDoc(doc)}
+                            className="btn-primary btn-sm gap-2"
+                          >
                             <ExternalLink size={14} /> View Full Size
                           </button>
                         </div>
@@ -359,6 +465,40 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
         userId={userId} 
         userName={`${details?.user?.firstName} ${details?.user?.lastName}`}
       />
+
+      <Modal
+        open={!!selectedDoc}
+        onClose={() => setSelectedDoc(null)}
+        title={selectedDoc?.name || "Document Viewer"}
+        size="lg"
+      >
+        <div className="flex flex-col items-center">
+          {selectedDoc?.url?.toLowerCase().includes('.pdf') || selectedDoc?.name?.toLowerCase().includes('.pdf') ? (
+            <iframe 
+              src={selectedDoc.url} 
+              className="w-full h-[60vh] border-0 rounded-xl"
+              title={selectedDoc.name}
+            />
+          ) : (
+            <img 
+              src={selectedDoc?.url} 
+              alt={selectedDoc?.name} 
+              className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-soft" 
+            />
+          )}
+          <div className="mt-6 flex w-full justify-between items-center bg-cream/30 p-4 rounded-2xl">
+            <div className="text-xs font-bold text-textgray">
+              Type: <span className="text-charcoal uppercase">{selectedDoc?.type}</span>
+            </div>
+            <button 
+              onClick={() => window.open(selectedDoc.url, '_blank')}
+              className="btn-outline btn-sm gap-2"
+            >
+              <ExternalLink size={14} /> Open in New Tab
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
