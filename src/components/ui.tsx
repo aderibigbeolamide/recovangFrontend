@@ -255,7 +255,7 @@ export function Empty({
 
 /* ---------- Avatar ---------- */
 export function Avatar({
-  letters, name, photo, size = 36, tone = "primary", className,
+  letters, name, photo, size = 36, tone = "primary", className, icon: Icon,
 }: {
   letters?: string;
   name?: string;
@@ -263,6 +263,7 @@ export function Avatar({
   size?: number;
   tone?: "primary" | "gold" | "dark";
   className?: string;
+  icon?: LucideIcon;
 }) {
   const tones = {
     primary: "bg-mint text-primary",
@@ -287,7 +288,7 @@ export function Avatar({
       className={cn("flex shrink-0 items-center justify-center rounded-full font-display font-extrabold", tones[tone], className)}
       style={{ width: size, height: size, fontSize: size * 0.38 }}
     >
-      {initials}
+      {Icon ? <Icon size={size * 0.5} /> : initials}
     </div>
   );
 }

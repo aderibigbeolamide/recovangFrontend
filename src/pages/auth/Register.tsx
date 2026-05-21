@@ -107,8 +107,8 @@ export default function Register() {
     try {
       const { user, token } = await registerApi({
         firstName, lastName, email: email.trim(), phone: phone.trim(), password, role,
-        agentSubType,
-        workMode,
+        agentSubType: agentSubType || undefined,
+        workMode: workMode || undefined,
         state: state === "others" ? manualState : state,
         lga: lga === "others" ? manualLga : lga,
         ward: ward === "others" ? manualWard : ward

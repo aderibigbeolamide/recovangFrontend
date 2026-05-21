@@ -22,6 +22,7 @@ export interface AuthUser {
   avatarLetters?: string;
   permissions?: string[];
   region?: string;
+  isEmailVerified?: boolean;
 }
 
 interface AuthState {
